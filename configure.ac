@@ -26,41 +26,11 @@
 AC_INIT(Simd, 1.0)
 m4_include([common.ac])
 
-# Check some lib...
-#PKG_CHECK_MODULES([ZLIB], [zlib >= 1.2.3])
-
-# Add a feature (not enabled by default)
-#AC_ARG_ENABLE([feature],
-#    AS_HELP_STRING([--enable-feature], [build with feature])
-#)
-#AS_IF([test "x$enable_feature" == "xyes"], [
-#    ...
-#])
-
-# Add a feature (enabled by default)
-#AC_ARG_ENABLE([feature],
-#    AS_HELP_STRING([--disable-feature], [build without feature])
-#)
-#AS_IF([test "x$enable_feature" != "xno"], [
-#    ...
-#])
-
 # Add an optional feature
-#AC_ARG_WITH([feature],
-#    AS_HELP_STRING([--with-feature], [additionally, build feature]), [
-    # Action if true
-#], [
-    # Action if false    
-#])
-
-# Additional tests
-#AM_COND_IF([TESTS], [
-#    AC_CONFIG_FILES(tests/subdirectory/Makefile
-#                    )
-#])
-
-# Link with Makefile.am in additional source directories
-#AC_CONFIG_FILES(src/subdirectory/Makefile
-#                )
+AC_ARG_WITH([built-in-fftf],
+    AS_HELP_STRING([--with-built-in-fftf], [do not link with FFTF]), [], [
+        # Check for installed FFTF
+    	PKG_CHECK_MODULES([FFTF], [fftf >= 1.0])
+])
 
 AC_OUTPUT

@@ -31,41 +31,9 @@ lib_LTLIBRARIES = libSimd.la
 # Build information for libSimd.la
 
 # Source files
-libSimd_la_SOURCES =
-
-# Linker options
-libSimd_la_LDFLAGS = 
-
-# Compiler options
-libSimd_la_CPPFLAGS = 
+libSimd_la_SOURCES = memory.c convolute.c avx_extra.c daubechies.c wavelet.c coiflets.c symlets.c
 
 # Used libraries
-libSimd_la_LIBADD = 
+libSimd_la_LIBADD = @FFTF_LIBS@
 
 PARALLEL_SUBDIRS =
-
-
-#######################################
-# Subdirectory instructions
-
-# 1. Create Makefile.am in the subdirectory:
-
-#include $(top_srcdir)/Makefile.common
-
-#noinst_LTLIBRARIES = lib_subdir.la
-
-# Sources
-#lib_subdir_la_SOURCES =
-
-# Compiler options
-#lib_subdir_la_CPPFLAGS =
-
-# 2. Add subdir/Makefile to configure.ac at AC_CONFIG_FILES
-
-# 3. Add reference to lib_subdir.la in libSimd.la:
-
-# libSimd_la_LIBADD = subdir/lib_subdir.la
-
-# 4. Add subdir to parent directory Makefile.am's PARALLEL_SUBDIRS
-
-# PARALLEL_SUBDIRS = subdir
