@@ -28,8 +28,8 @@ m4_include([common.ac])
 
 # Add an optional feature
 AC_ARG_WITH([built-in-fftf],
-    AS_HELP_STRING([--with-built-in-fftf], [do not link with FFTF and ignore the dependency from it]), [
-    	CPPFLAGS="$CPPFLAGS -I\$(top_builddir)"
+    AS_HELP_STRING([--with-built-in-fftf], [do not link with FFTF and ignore the dependency from it (tests are not built then)]), [
+    	TESTS_DIR=
     ], [
         # Check for installed FFTF
     	PKG_CHECK_MODULES([FFTF], [fftf >= 1.0])
