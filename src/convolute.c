@@ -10,6 +10,7 @@
  *  Copyright 2013 Samsung R&D Institute Russia
  */
 
+#ifndef NO_FFTF
 #include "inc/simd/convolute.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -376,3 +377,5 @@ void convolute(ConvoluteHandle handle,
       break;
   }
 }
+
+#endif  // #ifndef NO_FFTF

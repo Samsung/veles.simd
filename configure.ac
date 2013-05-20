@@ -26,6 +26,14 @@
 AC_INIT(Simd, 1.0)
 m4_include([common.ac])
 
+# Check whether to build FFTF dependent code
+AC_ARG_ENABLE([enable-fftf],
+    AS_HELP_STRING([--disable-eina-logging], [Disable FFTF dependent code])
+)
+AS_IF([test "x$enable_eina_logging" != "xyes"], [    
+    CPPFLAGS="$CPPFLAGS -DNO_FFTF"
+])
+
 # Add an optional feature
 AC_ARG_WITH([built-in-fftf],
     AS_HELP_STRING([--with-built-in-fftf], [do not link with FFTF and ignore the dependency from it (tests are not built then)]), [

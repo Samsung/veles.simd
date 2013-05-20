@@ -11,6 +11,7 @@
  */
 
 #include <gtest/gtest.h>
+#ifndef NO_FFTF
 #include <math.h>
 #include <simd/convolute.h>
 #include <simd/memory.h>
@@ -346,5 +347,7 @@ ConvoluteOverlapSaveHandle osHandle;
 #undef CUSTOM_CODE_POST
 #define CUSTOM_CODE_POST { convolute_overlap_save_finalize(osHandle); }
 #include "tests/benchmark.inc"
+
+#endif  // #ifndef NO_FFTF
 
 #include "tests/google/src/gtest_main.cc"
