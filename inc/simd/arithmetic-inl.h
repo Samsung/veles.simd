@@ -508,7 +508,7 @@ INLINE NOTNULL(1, 2, 3) void complex_multiply_conjugate(
     const float *a, const float *b, float *res) {
   __m256 Xvec = _mm256_load_ps(a);
   __m256 Hvec = _mm256_load_ps(b);
-  Hvec = _mm256_mul_ps(Hvec, _mm256_set_ps(1, -1, 1, -1, 1, -1, 1, -1));
+  Hvec = _mm256_mul_ps(Hvec, _mm256_set_ps(-1, 1, -1, 1, -1, 1, -1, 1));
   __m256 Xim = _mm256_movehdup_ps(Xvec);
   __m256 Xre = _mm256_moveldup_ps(Xvec);
   __m256 HvecExch = _mm256_shuffle_ps(Hvec, Hvec, 0xB1);
@@ -532,8 +532,8 @@ INLINE NOTNULL(1, 3) void complex_conjugate(
     }
 
     const __m256 mulVec = (startIndex % 2 == 0)?
-      _mm256_set_ps(1, -1, 1, -1, 1, -1, 1, -1) :
-      _mm256_set_ps(-1, 1, -1, 1, -1, 1, -1, 1);
+      _mm256_set_ps(-1, 1, -1, 1, -1, 1, -1, 1) :
+      _mm256_set_ps(1, -1, 1, -1, 1, -1, 1, -1);
     for (size_t i = startIndex; i < length - 7; i += 8) {
       __m256 vec = _mm256_load_ps(array + i);
       vec = _mm256_mul_ps(vec, mulVec);
@@ -547,7 +547,7 @@ INLINE NOTNULL(1, 3) void complex_conjugate(
       res[i] = -array[i];
     }
   } else {
-    const __m256 mulVec = _mm256_set_ps(1, -1, 1, -1, 1, -1, 1, -1);
+    const __m256 mulVec = _mm256_set_ps(-1, 1, -1, 1, -1, 1, -1, 1);
     for (size_t i = 0; i < length - 7; i += 8) {
       __m256 vec = _mm256_loadu_ps(array + i);
       vec = _mm256_mul_ps(vec, mulVec);
