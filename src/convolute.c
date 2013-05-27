@@ -103,6 +103,7 @@ ConvoluteOverlapSaveHandle convolute_overlap_save_initialize(
   size_t M = hLength;  //  usual designation
   handle.x_length = xLength;
   handle.h_length = hLength;
+  handle.conjugate = 0;
 
   // Do zero padding of h to the next power of 2 + extra 2 float-s
   size_t L = M;
@@ -192,13 +193,26 @@ void convolute_overlap_save(ConvoluteOverlapSaveHandle handle,
 #ifdef SIMD
     cciStart = L;
     for (int cci = 0; cci < L; cci += FLOAT_STEP) {
-      complex_multiply(handle.fft_boiler_plate + cci, handle.H + cci,
+      if (handle.conjugate) {
+        complex_multiply_conjugate(handle.fft_boiler_plate + cci,
+                                   handle.H + cci,
+                                   handle.fft_boiler_plate + cci);
+      } else {
+        complex_multiply(handle.fft_boiler_plate + cci, handle.H + cci,
                        handle.fft_boiler_plate + cci);
+      }
     }
 #endif
     for (int cci = cciStart; cci < L + 2; cci += 2) {
-      complex_multiply_na(handle.fft_boiler_plate + cci, handle.H + cci,
-                          handle.fft_boiler_plate + cci);
+      if (handle.conjugate) {
+        complex_multiply_conjugate_na(handle.fft_boiler_plate + cci,
+                                      handle.H + cci,
+                                      handle.fft_boiler_plate + cci);
+      } else {
+        complex_multiply_na(handle.fft_boiler_plate + cci,
+                            handle.H + cci,
+                            handle.fft_boiler_plate + cci);
+      }
     }
 
     // Return back from the Fourier representation
@@ -235,6 +249,7 @@ ConvoluteFFTHandle convolute_fft_initialize(size_t xLength, size_t hLength) {
   *handle.M = M;
   handle.x_length = xLength;
   handle.h_length = hLength;
+  handle.conjugate = 0;
 
   // Now M is the nearest greater than or equal power of 2.
   // Do zero padding of x and h
@@ -296,11 +311,19 @@ void convolute_fft(ConvoluteFFTHandle handle,
 #ifdef SIMD
   istart = M;
   for (int i = 0; i < M; i += FLOAT_STEP) {
-    complex_multiply(X + i, H + i, X + i);
+    if (handle.conjugate) {
+      complex_multiply_conjugate(X + i, H + i, X + i);
+    } else {
+      complex_multiply(X + i, H + i, X + i);
+    }
   }
 #endif
   for (int i = istart; i < M + 2; i += 2) {
-    complex_multiply_na(X + i, H + i, X + i);
+    if (handle.conjugate) {
+      complex_multiply_conjugate_na(X + i, H + i, X + i);
+    } else {
+      complex_multiply_na(X + i, H + i, X + i);
+    }
   }
 
   // Return back from the Fourier representation

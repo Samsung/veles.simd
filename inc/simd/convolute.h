@@ -27,6 +27,7 @@ typedef struct {
   int x_length;
   int h_length;
   float **inputs;
+  int conjugate;
 } ConvoluteFFTHandle;
 
 /// @brief Prepares for the calculation of linear convolution of two signals
@@ -59,6 +60,7 @@ typedef struct {
   size_t x_length;
   size_t h_length;
   int *L;
+  int conjugate;
 } ConvoluteOverlapSaveHandle;
 
 /// @brief Prepares for the calculation of linear convolution of two signals

@@ -136,6 +136,32 @@ TEST(Arithmetic, complex_multiply) {
                       * sizeof(res[0])));
 }
 
+TEST(Arithmetic, complex_multiply_conjugate) {
+  float ar1[8] __attribute__ ((aligned (64))) = {  // NOLINT(whitespace/parens)
+      1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f
+  };
+  float ar2[8] __attribute__ ((aligned (64))) = {  // NOLINT(whitespace/parens)
+      -1.5f, 1.0f, 3.5f, 3.0f, -5.5f, 6.5f, 2.0f, -9.0f
+  };
+  float res[8] __attribute__ ((aligned (64)));  // NOLINT(whitespace/parens)
+
+  complex_multiply_conjugate(ar1, ar2, res);
+
+  float verif[8];
+  for (int cci = 0; cci < 8; cci += 2) {
+    complex_multiply_conjugate_na(&ar1[cci], &ar2[cci], &verif[cci]);
+  }
+  ASSERT_EQ(0, memcmp(res, verif,
+#ifdef __AVX__
+                      8
+#elif defined(__NEON__)
+                      4
+#else
+                      2
+#endif
+                      * sizeof(res[0])));
+}
+
 TEST(Arithmetic, real_multiply) {
   float ar1[8] __attribute__ ((aligned (64))) = {  // NOLINT(whitespace/parens)
       1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f
