@@ -30,7 +30,7 @@ m4_include([common.ac])
 AC_ARG_ENABLE([enable-simd-fftf],
     AS_HELP_STRING([--disable-simd-fftf], [Disable FFTF dependent code])
 )
-AS_IF([test "x$enable_simd_fftf" != "xyes"], [    
+AS_IF([test "x$enable_simd_fftf" == "xno"], [    
     CPPFLAGS="$CPPFLAGS -DNO_FFTF"
 ])
 
