@@ -48,7 +48,8 @@ AM_DEFAULT_SOURCE_EXT = .cc
 
 AM_CPPFLAGS = -I$(top_srcdir)/tests/google
 AM_LDFLAGS = $(top_builddir)/src/libSimd.la \
-       $(top_builddir)/tests/google/lib_gtest.la -pthread
+       $(top_builddir)/tests/google/lib_gtest.la
+LIBS = @FFTF_LIBS@ -pthread
 
 noinst_PROGRAMS = $(TESTS)
 

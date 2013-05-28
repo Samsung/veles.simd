@@ -16,17 +16,12 @@
 #include <simd/convolute.h>
 #include <simd/memory.h>
 #include <simd/arithmetic-inl.h>
+#include <fftf/api.h>
 
 void convolute_reference(const float *__restrict x, size_t xLength,
                          const float *__restrict h, size_t hLength,
                          float *__restrict result) {
-  for (int n = 0; n < static_cast<int>(xLength); n++) {
-    float sum = 0.f;
-    for (int m = 0; m < static_cast<int>(hLength) && m <= n; m++) {
-      sum += h[m] * x[n - m];
-    }
-    result[n] = sum;
-  }
+  convolute_simd(false, x, xLength, h, hLength, result);
 }
 
 void DebugPrintConvolution(const char* name, const float* vec) {
@@ -37,7 +32,28 @@ void DebugPrintConvolution(const char* name, const float* vec) {
   printf("\n");
 }
 
+TEST(convolute, convolute_reference) {
+  float x[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+  float y[] = { 10, 9, 8, 7 };
+  float z[11];
+  convolute_reference(x, sizeof(x)/sizeof(float),
+                      y, sizeof(y)/sizeof(float),
+                      z);
+  ASSERT_NEAR(z[0], 10, 0.0001f);
+  ASSERT_NEAR(z[1], 29, 0.0001f);
+  ASSERT_NEAR(z[2], 56, 0.0001f);
+  ASSERT_NEAR(z[3], 90, 0.0001f);
+  ASSERT_NEAR(z[4], 124, 0.0001f);
+  ASSERT_NEAR(z[5], 158, 0.0001f);
+  ASSERT_NEAR(z[6], 192, 0.0001f);
+  ASSERT_NEAR(z[7], 226, 0.0001f);
+  ASSERT_NEAR(z[8], 170, 0.0001f);
+  ASSERT_NEAR(z[9], 113, 0.0001f);
+  ASSERT_NEAR(z[10], 56, 0.0001f);
+}
+
 TEST(convolute, convolute_fft) {
+  fftf_set_backend_priority(FFTF_BACKEND_LIBAV, 1000);
   const int xlen = 1020;
   const int hlen = 50;
 
@@ -50,18 +66,18 @@ TEST(convolute, convolute_fft) {
     h[i] = i / (hlen- 1.0f);
   }
 
-  float verif[xlen];
+  float verif[xlen + hlen - 1];
   convolute_reference(x, xlen, h, hlen, verif);
   DebugPrintConvolution("REFERENCE", verif);
 
-  float res[xlen];
+  float res[xlen + hlen - 1];
   auto handle = convolute_fft_initialize(xlen, hlen);
   convolute_fft(handle, x, h, res);
   convolute_fft_finalize(handle);
   DebugPrintConvolution("FFT\t", res);
 
   int firstDifferenceIndex = -1;
-  for (int i = 0; i < xlen; i++) {
+  for (int i = 0; i < xlen + hlen - 1; i++) {
     float delta = res[i] - verif[i];
     if (delta * delta > 1E-6 && firstDifferenceIndex == -1) {
       firstDifferenceIndex = i;
@@ -83,62 +99,24 @@ TEST(convolute, convolute_overlap_save) {
     h[i] = i / (hlen- 1.0f);
   }
 
-  float verif[xlen];
+  float verif[xlen + hlen - 1];
   convolute_reference(x, xlen, h, hlen, verif);
   DebugPrintConvolution("REFERENCE", verif);
 
-  float res[xlen];
+  float res[xlen + hlen - 1];
   auto handle = convolute_overlap_save_initialize(xlen, hlen);
   convolute_overlap_save(handle, x, h, res);
   convolute_overlap_save_finalize(handle);
   DebugPrintConvolution("OVERLAP-SAVE", res);
 
   int firstDifferenceIndex = -1;
-  for (int i = 0; i < xlen; i++) {
+  for (int i = 0; i < xlen + hlen - 1; i++) {
     float delta = res[i] - verif[i];
     if (delta * delta > 1E-6 && firstDifferenceIndex == -1) {
       firstDifferenceIndex = i;
     }
   }
   ASSERT_EQ(-1, firstDifferenceIndex);
-}
-
-TEST(convolute, convolute_ones) {
-  const int xlen = 1024;
-  const int hlen = 1024;
-
-  float x[xlen];
-    for (int i = 0; i < xlen; i++) {
-      x[i] = sinf(i) * 100;
-    }
-    float h[hlen];
-    int step = 8;
-    int pulses = 3;
-    int ct = 0;
-    for (int i = 0; i < hlen; i++) {
-      if (i % step == 0 && ct < pulses) {
-        h[i] = 1;
-        ct++;
-      } else
-        h[i] = 0;
-    }
-
-    float verif[xlen];
-    convolute_reference(x, xlen, h, hlen, verif);
-    DebugPrintConvolution("REFERENCE", verif);
-
-    float res[xlen];
-    convolute_ones(x, xlen, step, pulses, res);
-    DebugPrintConvolution("CONVOLUTE-ONES", res);
-
-    int firstDifferenceIndex = -1;
-    for (int i = 0; i < xlen; i++) {
-      float delta = res[i] - verif[i];
-      if (delta * delta > 1E-6 && firstDifferenceIndex == -1) {
-        firstDifferenceIndex = i;
-      }
-    }
-    ASSERT_EQ(-1, firstDifferenceIndex);
 }
 
 TEST(convolute, convolute_simd) {
@@ -154,24 +132,14 @@ TEST(convolute, convolute_simd) {
     h[i] = i / (hlen - 1.0f);
   }
 
-  float verif[xlen];
+  float verif[xlen + hlen - 1];
   convolute_reference(x, xlen, h, hlen, verif);
 
-  float res[xlen];
+  float res[xlen + hlen - 1];
   convolute_simd(true, x, xlen, h, hlen, res);
 
   int firstDifferenceIndex = -1;
-  for (int i = 0; i < xlen; i++) {
-    float delta = res[i] - verif[i];
-    if (delta * delta > 1E-6 && firstDifferenceIndex == -1) {
-      firstDifferenceIndex = i;
-    }
-  }
-  ASSERT_EQ(-1, firstDifferenceIndex);
-
-  convolute_simd(false, x, xlen, h, hlen, res);
-
-  for (int i = 0; i < xlen; i++) {
+  for (int i = 0; i < xlen + hlen - 1; i++) {
     float delta = res[i] - verif[i];
     if (delta * delta > 1E-6 && firstDifferenceIndex == -1) {
       firstDifferenceIndex = i;

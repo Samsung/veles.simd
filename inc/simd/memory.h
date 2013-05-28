@@ -20,6 +20,10 @@
 extern "C" {
 #endif
 
+#if __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 #ifdef __AVX__
 #include <stdint.h>  // NOLINT(build/include_order)
 
@@ -142,6 +146,10 @@ float *rmemcpyf(float *__restrict dest,
 /// dest[i + 1] = src[n - i - 1], i = 1..(n-1), i += 2.
 float *crmemcpyf(float *__restrict dest,
                  const float *__restrict src, size_t length) NOTNULL(1, 2);
+
+#if __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #ifdef __cplusplus
 }

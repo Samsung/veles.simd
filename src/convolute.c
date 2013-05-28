@@ -22,75 +22,57 @@ void convolute_simd(int simd,
                     const float *x, size_t xLength,
                     const float *h, size_t hLength,
                     float *result) {
-  for (int n = 0; n < (int)xLength; n++) {
+  for (int n = 0; n < (int)(xLength + hLength - 1); n++) {
     float sum = 0.f;
+    int beg = n < (int)xLength? 0 : n - xLength + 1;
     int end = n + 1;
     if (end > (int)hLength) {
       end = hLength;
     }
     if (simd) {
 #ifdef __AVX__
-      if (end < 8) {
-        for (int m = 0; m < end; m++) {
-          sum += h[m] * x[n - m];
-        }
-      } else {
-         int simdEnd =  end & ~7;
-        __m256 accum = _mm256_setzero_ps();
-        for (int m = 0; m < simdEnd; m += 8) {
-          __m256 xvec = _mm256_loadu_ps(x + n - m - 7);
-          __m256 hvec = _mm256_loadu_ps(h + m);
-          xvec = _mm256_permute2f128_ps(xvec, xvec, 1);
-          xvec = _mm256_permute_ps(xvec, 27);
-          __m256 mulres = _mm256_mul_ps(xvec, hvec);
-          accum = _mm256_add_ps(accum, mulres);
-        }
-        accum = _mm256_hadd_ps(accum, accum);
-        accum = _mm256_hadd_ps(accum, accum);
-        sum = accum[0] + accum[4];
-        for (int m = simdEnd; m < end; m++) {
-          sum += h[m] * x[n - m];
-        }
+      int simdEnd =  beg + ((end - beg) & ~7);
+      __m256 accum = _mm256_setzero_ps();
+      for (int m = beg; m < simdEnd; m += 8) {
+        __m256 xvec = _mm256_loadu_ps(x + n - m - 7);
+        __m256 hvec = _mm256_loadu_ps(h + m);
+        xvec = _mm256_permute2f128_ps(xvec, xvec, 1);
+        xvec = _mm256_permute_ps(xvec, 27);
+        __m256 mulres = _mm256_mul_ps(xvec, hvec);
+        accum = _mm256_add_ps(accum, mulres);
+      }
+      accum = _mm256_hadd_ps(accum, accum);
+      accum = _mm256_hadd_ps(accum, accum);
+      sum = accum[0] + accum[4];
+      for (int m = simdEnd; m < end; m++) {
+        sum += h[m] * x[n - m];
       }
     } else {
 #elif defined(__ARM_NEON__)
-      if (end < 4) {
-        for (int m = 0; m < end; m++) {
-          sum += h[m] * x[n - m];
-        }
-      } else {
-         int simdEnd =  end & ~3;
-        float32x4_t accum = vdupq_n_f32(0.f);
-        for (int m = 0; m < simdEnd; m += 4) {
-          float32x4_t xvec = vld1q_f32(x + n - m - 3);
-          xvec = vrev64q_f32(xvec);
-          float32x4_t hvec = vld1q_f32(h + m);
-          accum = vmlaq_f32(xvec, hvec, accum);
-        }
-        float32x2_t accum2 = vpadd_f32(vget_high_f32(accum),
-                                       vget_low_f32(accum));
-        sum = vget_lane_f32(accum2, 0) + vget_lane_f32(accum2, 1);
-        for (int m = simdEnd; m < end; m++) {
-          sum += h[m] * x[n - m];
-        }
+      int simdEnd = beg + ((end - beg) & ~3);
+      float32x4_t accum = vdupq_n_f32(0.f);
+      for (int m = beg; m < simdEnd; m += 4) {
+        float32x4_t xvec = vld1q_f32(x + n - m - 3);
+        xvec = vrev64q_f32(xvec);
+        float32x4_t hvec = vld1q_f32(h + m);
+        accum = vmlaq_f32(xvec, hvec, accum);
+      }
+      float32x2_t accum2 = vpadd_f32(vget_high_f32(accum),
+                                     vget_low_f32(accum));
+      sum = vget_lane_f32(accum2, 0) + vget_lane_f32(accum2, 1);
+      for (int m = simdEnd; m < end; m++) {
+        sum += h[m] * x[n - m];
       }
     } else {
 #else
     } {
 #endif
-      for (int m = 0; m < end; m++) {
+      for (int m = beg; m < end; m++) {
         sum += h[m] * x[n - m];
       }
     }
    result[n] = sum;
  }
-}
-
-void convolute_ones(const float *__restrict x, size_t xLength,
-                    int k, int count, float *result) {
-  for (int i = 0; i < (int)xLength; ++i) {
-    result[i] = x[i] + (i >= k ? result[i - k] : 0) - (i >= k*count ? x[i - k * count] : 0);
-  }
 }
 
 ConvoluteOverlapSaveHandle convolute_overlap_save_initialize(
@@ -103,7 +85,7 @@ ConvoluteOverlapSaveHandle convolute_overlap_save_initialize(
   size_t M = hLength;  //  usual designation
   handle.x_length = xLength;
   handle.h_length = hLength;
-  handle.conjugate = 0;
+  handle.reverse = 0;
 
   // Do zero padding of h to the next power of 2 + extra 2 float-s
   size_t L = M;
@@ -156,8 +138,12 @@ void convolute_overlap_save(ConvoluteOverlapSaveHandle handle,
 
   size_t M = handle.h_length;  //  usual designation
   int L = *handle.L;
-  // Do zero padding of h to the next power of 2 + extra 2 float-s
-  memcpy(handle.H, h, handle.h_length * sizeof(float));
+
+  if (handle.reverse) {
+    rmemcpyf(handle.H, h, handle.h_length);
+  } else {
+    memcpy(handle.H, h, handle.h_length * sizeof(float));
+  }
 
   // H = FFT(paddedH, L)
   size_t fftComplexSize = (L + 2) * sizeof(float);
@@ -169,7 +155,7 @@ void convolute_overlap_save(ConvoluteOverlapSaveHandle handle,
   int step = L - (M - 1);
   // Note: no "#pragma omp parallel for" here since
   // handle.fft_boiler_plate is shared AND FFTF should utilize all available resources.
-  for (size_t i = 0; i < handle.x_length; i += step) {
+  for (size_t i = 0; i < handle.x_length + M - 1; i += step) {
     // X = [zeros(1, M - 1), x, zeros(1, L-1)];
     // we must run FFT on X[i, i + L].
     // No X is really needed, some index arithmetic is used.
@@ -193,26 +179,14 @@ void convolute_overlap_save(ConvoluteOverlapSaveHandle handle,
 #ifdef SIMD
     cciStart = L;
     for (int cci = 0; cci < L; cci += FLOAT_STEP) {
-      if (handle.conjugate) {
-        complex_multiply_conjugate(handle.fft_boiler_plate + cci,
-                                   handle.H + cci,
-                                   handle.fft_boiler_plate + cci);
-      } else {
-        complex_multiply(handle.fft_boiler_plate + cci, handle.H + cci,
-                       handle.fft_boiler_plate + cci);
-      }
+      complex_multiply(handle.fft_boiler_plate + cci, handle.H + cci,
+                     handle.fft_boiler_plate + cci);
     }
 #endif
     for (int cci = cciStart; cci < L + 2; cci += 2) {
-      if (handle.conjugate) {
-        complex_multiply_conjugate_na(handle.fft_boiler_plate + cci,
-                                      handle.H + cci,
-                                      handle.fft_boiler_plate + cci);
-      } else {
-        complex_multiply_na(handle.fft_boiler_plate + cci,
-                            handle.H + cci,
-                            handle.fft_boiler_plate + cci);
-      }
+      complex_multiply_na(handle.fft_boiler_plate + cci,
+                          handle.H + cci,
+                          handle.fft_boiler_plate + cci);
     }
 
     // Return back from the Fourier representation
@@ -221,12 +195,12 @@ void convolute_overlap_save(ConvoluteOverlapSaveHandle handle,
     real_multiply_scalar(handle.fft_boiler_plate + M - 1, step, 1.0f / L,
                          handle.fft_boiler_plate + M - 1);
 
-    if (i + step <= handle.x_length) {
+    if (i + step < handle.x_length + handle.h_length) {
       memcpy(result + i, handle.fft_boiler_plate + M - 1,
              step * sizeof(float));
     } else {
       memcpy(result + i, handle.fft_boiler_plate + M - 1,
-             (handle.x_length - i) * sizeof(float));
+             (handle.x_length + handle.h_length - 1 - i) * sizeof(float));
     }
   }
 }
@@ -249,7 +223,7 @@ ConvoluteFFTHandle convolute_fft_initialize(size_t xLength, size_t hLength) {
   *handle.M = M;
   handle.x_length = xLength;
   handle.h_length = hLength;
-  handle.conjugate = 0;
+  handle.reverse = 0;
 
   // Now M is the nearest greater than or equal power of 2.
   // Do zero padding of x and h
@@ -302,7 +276,11 @@ void convolute_fft(ConvoluteFFTHandle handle,
   int hLength = handle.h_length;
   int M = *handle.M;
   memcpy(X, x, xLength * sizeof(x[0]));
-  memcpy(H, h, hLength * sizeof(h[0]));
+  if (handle.reverse) {
+    rmemcpyf(H, h, hLength);
+  } else {
+    memcpy(H, h, hLength * sizeof(h[0]));
+  }
 
   // fft(X), fft(H)
   fftf_calc(handle.fft_plan);
@@ -311,25 +289,17 @@ void convolute_fft(ConvoluteFFTHandle handle,
 #ifdef SIMD
   istart = M;
   for (int i = 0; i < M; i += FLOAT_STEP) {
-    if (handle.conjugate) {
-      complex_multiply_conjugate(X + i, H + i, X + i);
-    } else {
-      complex_multiply(X + i, H + i, X + i);
-    }
+    complex_multiply(X + i, H + i, X + i);
   }
 #endif
   for (int i = istart; i < M + 2; i += 2) {
-    if (handle.conjugate) {
-      complex_multiply_conjugate_na(X + i, H + i, X + i);
-    } else {
-      complex_multiply_na(X + i, H + i, X + i);
-    }
+    complex_multiply_na(X + i, H + i, X + i);
   }
 
   // Return back from the Fourier representation
   fftf_calc(handle.fft_inverse_plan);
   // Normalize
-  real_multiply_scalar(X, xLength, 1.0f / M, result);
+  real_multiply_scalar(X, xLength + hLength - 1, 1.0f / M, result);
 }
 
 ConvoluteHandle convolute_initialize(size_t xLength, size_t hLength) {

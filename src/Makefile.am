@@ -31,7 +31,11 @@ lib_LTLIBRARIES = libSimd.la
 # Build information for libSimd.la
 
 # Source files
-libSimd_la_SOURCES = memory.c convolute.c avx_extra.c daubechies.c wavelet.c coiflets.c symlets.c
+libSimd_la_SOURCES = avx_extra.c memory.c convolute.c correlate.c \
+daubechies.c wavelet.c coiflets.c symlets.c 
+
+# Used libraries
+libSimd_la_CFLAGS = @FFTF_CFLAGS@
 
 # Used libraries
 libSimd_la_LIBADD = @FFTF_LIBS@

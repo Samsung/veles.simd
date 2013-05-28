@@ -15,25 +15,22 @@
 
 #include <stddef.h>
 #include <simd/attributes.h>
+#include <simd/convolute_structs.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct {
-  void *fft_plan;
-  void *fft_inverse_plan;
-  int *M;
-  int x_length;
-  int h_length;
-  float **inputs;
-  int conjugate;
-} ConvoluteFFTHandle;
+#if __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
+typedef struct ConvoluteFFTHandle ConvoluteFFTHandle;
 
 /// @brief Prepares for the calculation of linear convolution of two signals
 /// using the FFT method.
-/// @param xLength The length of "x" array in float-s.
-/// @param hLength The length of "h" array in float-s.
+/// @param xLength The length of the first array in float-s.
+/// @param hLength The length of the second array in float-s.
 /// @return The handle for convolute_fft().
 ConvoluteFFTHandle convolute_fft_initialize(size_t xLength, size_t hLength);
 
@@ -52,21 +49,12 @@ void convolute_fft(ConvoluteFFTHandle handle,
 /// @param handle The structure obtained from convolute_fft_initialize().
 void convolute_fft_finalize(ConvoluteFFTHandle handle);
 
-typedef struct {
-  void *fft_plan;
-  void *fft_inverse_plan;
-  float *fft_boiler_plate;
-  float *H;
-  size_t x_length;
-  size_t h_length;
-  int *L;
-  int conjugate;
-} ConvoluteOverlapSaveHandle;
+typedef struct ConvoluteOverlapSaveHandle ConvoluteOverlapSaveHandle;
 
 /// @brief Prepares for the calculation of linear convolution of two signals
 /// using the overlap-save method.
-/// @param xLength The length of "x" array in float-s.
-/// @param hLength The length of "h" array in float-s.
+/// @param xLength The length of the first array in float-s.
+/// @param hLength The length of the second array in float-s.
 /// @return The handle for convolute_overlap_save().
 ConvoluteOverlapSaveHandle convolute_overlap_save_initialize(
     size_t xLength, size_t hLength);
@@ -91,9 +79,9 @@ void convolute_overlap_save_finalize(ConvoluteOverlapSaveHandle handle);
 /// the "brute force" method.
 /// @param simd Value indicating whether to use SIMD acceleration or not.
 /// @param x The first signal (long one).
-/// @param xLength The length of "x" array in float-s.
+/// @param xLength The length of the first array in float-s.
 /// @param h The second signal (short one).
-/// @param hLength The length of "h" array in float-s.
+/// @param hLength The length of the second array in float-s.
 /// @param result The resulting signal of length xLength.
 /// @note result and x may be the same arrays.
 void convolute_simd(int simd,
@@ -101,37 +89,12 @@ void convolute_simd(int simd,
                     const float *h, size_t hLength,
                     float *result) NOTNULL(2, 4, 6);
 
-/// @brief Calculates the linear convolution of two signals, the second
-/// signal being the periodic series of 1 and 0.
-/// @param x The first signal (long one).
-/// @param xLength The length of "x" array in float-s.
-/// @param k The length of the second signal's period.
-/// @note result and x may be the same arrays.
-/// @details Convolution for periodical filter which looks like:
-/// {1 {(k - 1) zeroes} 1 {(k - 1) zeroes} ..}.
-void convolute_ones(const float *__restrict x, size_t xLength,
-                    int k, int count, float *result);
-
-typedef enum {
-  kConvolutionAlgorithmBruteForce,
-  kConvolutionAlgorithmFFT,
-  kConvolutionAlgorithmOverlapSave
-} ConvolutionAlgorithm;
-
-typedef struct {
-  ConvolutionAlgorithm algorithm;
-  int x_length;
-  int h_length;
-  union {
-    ConvoluteFFTHandle fft;
-    ConvoluteOverlapSaveHandle os;
-  } handle;
-} ConvoluteHandle;
+typedef struct ConvoluteHandle ConvoluteHandle;
 
 /// @brief Prepares for the calculation of linear convolution of two signals
 /// using the best method.
-/// @param xLength The length of "x" array in float-s.
-/// @param hLength The length of "h" array in float-s.
+/// @param xLength The length of the first array in float-s.
+/// @param hLength The length of the second array in float-s.
 /// @return The handle for convolute().
 ConvoluteHandle convolute_initialize(size_t xLength, size_t hLength);
 
@@ -149,6 +112,10 @@ void convolute(ConvoluteHandle handle,
 /// @brief Frees any resources allocated by convolute_overlap_initialize().
 /// @param handle The structure obtained from convolute_overlap_initialize().
 void convolute_finalize(ConvoluteHandle handle);
+
+#if __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #ifdef __cplusplus
 }

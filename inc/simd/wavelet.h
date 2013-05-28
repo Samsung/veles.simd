@@ -21,6 +21,10 @@
 extern "C" {
 #endif
 
+#if __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 /// @brief Checks the specified wavelet order for validity.
 /// @param type The wavelet type.
 /// @param order The order of the wavelet.
@@ -89,6 +93,10 @@ void wavelet_apply_na(WaveletType type, int order,
                       const float *__restrict src, size_t length,
                       float *__restrict desthi, float *__restrict destlo)
     NOTNULL(3, 5, 6);
+
+#if __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #ifdef __cplusplus
 }
