@@ -802,7 +802,7 @@ INLINE NOTNULL(1, 3) void complex_conjugate(const float *array,
   const float32x4_t negVec = { 1.0f, -1.0f, 1.0f, -1.0f };
   for (int i = 0; i < ilength - 3; i += 4) {
     float32x4_t vec = vld1q_f32(array + i);
-    vec = vmulq_f32(vec, conj_vec);
+    vec = vmulq_f32(vec, negVec);
     vst1q_f32(res + i, vec);
   }
   for (int i = ((ilength >> 2) << 2) + 1; i < ilength; i++) {
