@@ -53,7 +53,6 @@ TEST(correlate, ross_correlate_reference) {
 }
 
 TEST(correlate, cross_correlate_fft) {
-  fftf_set_backend_priority(FFTF_BACKEND_LIBAV, 1000);
   const int xlen = 1020;
   const int hlen = 50;
 
