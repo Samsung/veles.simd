@@ -88,7 +88,7 @@ ConvoluteOverlapSaveHandle convolute_overlap_save_initialize(
   handle.reverse = 0;
 
   // Do zero padding of h to the next power of 2 + extra 2 float-s
-  size_t L = M;
+  int L = M;
   int log = 2;
   while (L >>= 1) {
     log++;
