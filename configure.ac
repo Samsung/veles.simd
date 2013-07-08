@@ -36,11 +36,14 @@ AS_IF([test "x$enable_simd_fftf" == "xno"], [
 
 # Add an optional feature
 AC_ARG_WITH([built-in-fftf],
-    AS_HELP_STRING([--with-built-in-fftf], [do not link with FFTF and ignore the dependency from it (tests are not built then)]), [
-    	TESTS_DIR=
-    ], [
-        # Check for installed FFTF
-    	PKG_CHECK_MODULES([FFTF], [fftf >= 1.0])
+    AS_HELP_STRING([--with-built-in-fftf],
+    [use FFTF build directory from built-in-fftf file]),
+    [FFTF_LIBS="\$(abs_top_builddir)/$(cat built-in-fftf)/src/libfftf.la"]
+)
+
+AS_IF([test "x$with_built_in_fftf" != "xyes" -a "x$enable_simd_fftf" != "xno"], [
+	# Check for installed FFTF
+	PKG_CHECK_MODULES([FFTF], [fftf >= 1.0])
 ])
 
 AC_OUTPUT
