@@ -10,6 +10,7 @@
  *  Copyright 2013 Samsung R&D Institute Russia
  */
 
+#define LIBSIMD_IMPLEMENTATION
 #include "inc/simd/memory.h"
 #include <assert.h>
 #ifdef __AVX__

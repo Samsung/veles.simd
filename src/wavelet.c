@@ -10,7 +10,7 @@
  *  Copyright 2013 Samsung R&D Institute Russia
  */
 
-
+#define LIBSIMD_IMPLEMENTATION
 #include "inc/simd/wavelet.h"
 #include <assert.h>
 #include <string.h>

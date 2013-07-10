@@ -11,6 +11,7 @@
  */
 
 #ifndef NO_FFTF
+#define LIBSIMD_IMPLEMENTATION
 #include "inc/simd/correlate.h"
 #include "inc/simd/convolute.h"
 #include "inc/simd/arithmetic-inl.h"

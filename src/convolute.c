@@ -11,6 +11,7 @@
  */
 
 #ifndef NO_FFTF
+#define LIBSIMD_IMPLEMENTATION
 #include "inc/simd/convolute.h"
 #include <assert.h>
 #include <stdlib.h>

@@ -23,9 +23,15 @@
 #define MALLOC __attribute__ ((__malloc__))
 #endif
 
+#ifndef LIBSIMD_IMPLEMENTATION
+
 #ifndef NOTNULL
 /* Mark pointer parameters which must not be NULL */
 #define NOTNULL(...) __attribute__ ((__nonnull__ (__VA_ARGS__)))
+#endif
+
+#else
+#define NOTNULL(...)
 #endif
 
 #ifndef UNUSED

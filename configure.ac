@@ -46,4 +46,12 @@ AS_IF([test "x$with_built_in_fftf" != "xyes" -a "x$enable_simd_fftf" != "xno"], 
 	PKG_CHECK_MODULES([FFTF], [fftf >= 1.0])
 ])
 
+# Check whether to conduct test benchmarks
+AC_ARG_ENABLE([benchmarks],
+    AS_HELP_STRING([--enable-benchmarks], [execute SIMD speedup benchmarks during tests evaluation])
+)
+AS_IF([test "x$enable_benchmarks" == "xyes"], [
+    CPPFLAGS="$CPPFLAGS -DBENCHMARK"
+])
+
 AC_OUTPUT
