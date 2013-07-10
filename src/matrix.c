@@ -48,16 +48,17 @@ static void matrix_multiply_avx(const float *m1, const float *m2,
                                 size_t h2 UNUSED, float *res) {
   assert(w1 % 8 == 0);
   assert(align_complement_f32(m1) == 0);
-  __m256 v2[w1 / 8] __attribute__((aligned(32)));
+  float col2[w1] __attribute__((aligned(32)));
   for (int i = 0; i < (int)w2; i++) {
     for (int k = 0; k < (int)w1; k++) {
-      v2[k / 8][k % 8] = m2[k * w2 + i];
+      col2[k] = m2[k * w2 + i];
     }
     for (int j = 0; j < (int)h1; j++) {
       __m256 sum = _mm256_setzero_ps();
       for (int k = 0; k < (int)w1; k += 8) {
         __m256 v1 = _mm256_load_ps(m1 + j * w1 + k);
-        __m256 dp = _mm256_dp_ps(v1, v2[k / 8], 0xFF);
+        __m256 v2 = _mm256_load_ps(col2 + k);
+        __m256 dp = _mm256_dp_ps(v1, v2, 0xFF);
         sum = _mm256_add_ps(sum, dp);
       }
       res[j * w2 + i] = sum[0] + sum[4];
