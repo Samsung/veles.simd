@@ -59,7 +59,7 @@ export TESTLOG ?= tests.log
 
 REALLOG = $(top_builddir)/$(TESTLOG)
 
-DEFAULT_TIMEOUT=10
+DEFAULT_TIMEOUT=60
 
 tests:	
 	@for dir in $(PARALLEL_SUBDIRS); do \
