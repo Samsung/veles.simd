@@ -54,15 +54,7 @@ void *malloc_aligned_offset(size_t size, int offset) {
 
 void *malloc_aligned(size_t size) {
   void *ptr;
-  if (posix_memalign(&ptr,
-#ifdef __AVX__
-                     32,
-#elif defined(__ARM_NEON__)
-                     64,
-#else
-                     32,
-#endif
-                     size) != 0) {
+  if (posix_memalign(&ptr, 64, size) != 0) {
     return NULL;
   }
   return ptr;
@@ -74,8 +66,8 @@ float *mallocf(size_t length) {
 
 void memsetf(float *ptr, size_t length, float value) {
 #ifdef __AVX__
-  __m256 fillvec = _mm256_set_ps( value, value, value, value,
-                                  value, value, value, value );
+
+  __m256 fillvec = _mm256_set1_ps(value);
   size_t startIndex = align_complement_f32(ptr);
 
   for (size_t i = 0; i < startIndex; i++) {
@@ -86,16 +78,16 @@ void memsetf(float *ptr, size_t length, float value) {
     _mm256_store_ps(ptr + i, fillvec);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 3) << 3);
+  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
       i < length; i++) {
     ptr[i] = value;
   }
 #elif defined(__ARM_NEON__)
-  const float32x4_t fillvec = { value, value, value, value };
+  const float32x4_t fillvec = vdupq_n_f32(value);
   for (size_t i = 0; i < length - 3; i += 4) {
     vst1q_f32(ptr + i, fillvec);
   }
-  for (size_t i = ((length >> 2) << 2); i < length; i++) {
+  for (size_t i = (length & ~0x3); i < length; i++) {
     ptr[i] = value;
   }
 #else
@@ -134,17 +126,18 @@ float *rmemcpyf(float *__restrict dest,
     _mm256_storeu_ps(dest + length - i - 8, vec);
   }
 
-  for (size_t i = ((length >> 3) << 3); i < length; i++) {
+  for (size_t i = (length & ~0x7); i < length; i++) {
     dest[length - i - 1] = src[i];
   }
 #elif defined(__ARM_NEON__)
-  for (size_t i = 0; i < length - 7; i += 8) {
+  for (size_t i = 0; i < length - 3; i += 4) {
     float32x4_t vec = vld1q_f32(src + i);
     vec = vrev64q_f32(vec);
+    vec = vcombine_f32(vget_high_f32(vec), vget_low_f32(vec));
     vst1q_f32(dest + length - i - 4, vec);
   }
 
-  for (size_t i = ((length >> 2) << 2); i < length; i++) {
+  for (size_t i = (length & ~0x3); i < length; i++) {
     dest[length - i - 1] = src[i];
   }
 #else

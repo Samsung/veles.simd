@@ -151,7 +151,11 @@ float BenchmarkH[512] = { 1.f };
 float BenchmarkResult[10000];
 
 #define TEST_NAME convolute_simd_50
+#ifndef __arm__
 #define ITER_COUNT 50000
+#else
+#define ITER_COUNT 1000
+#endif
 #define BENCH_FUNC convolute_simd
 #define NO_OUTPUT
 #define EXTRA_PARAM BenchmarkH, sizeof(BenchmarkH) / sizeof(BenchmarkH[0]), \
@@ -162,7 +166,11 @@ float BenchmarkResult[10000];
 #undef ITER_COUNT
 #undef TEST_NAME
 #define TEST_NAME convolute_simd_500
+#ifndef __arm__
 #define ITER_COUNT 10000
+#else
+#define ITER_COUNT 1000
+#endif
 #define EXTRA_PARAM BenchmarkH, sizeof(BenchmarkH) / sizeof(BenchmarkH[0]), \
   BenchmarkResult
 #include "tests/benchmark.inc"
@@ -180,11 +188,16 @@ ConvoluteFFTHandle fftHandle;
 #undef ITER_COUNT
 #undef TEST_NAME
 #define TEST_NAME convolute_simd_vs_convolute_fft_512_512
+#ifndef __arm__
 #define ITER_COUNT 25000
+#else
+#define ITER_COUNT 2000
+#endif
 #define CUSTOM_CODE_PRE { fftHandle = convolute_fft_initialize(512, 512); }
 #define CUSTOM_CODE_POST { convolute_fft_finalize(fftHandle); }
 #include "tests/benchmark.inc"
 
+#ifndef __arm__
 #undef LENGTH
 #define LENGTH 256
 #undef CUSTOM_FUNC_BASELINE
@@ -216,6 +229,59 @@ ConvoluteFFTHandle fftHandle;
 #undef CUSTOM_CODE_PRE
 #define CUSTOM_CODE_PRE { fftHandle = convolute_fft_initialize(128, 128); }
 #include "tests/benchmark.inc"
+
+#else
+
+#undef LENGTH
+#define LENGTH 64
+#undef CUSTOM_FUNC_BASELINE
+#define CUSTOM_FUNC_BASELINE(x, xLength) convolute_simd(\
+    true, x, xLength, BenchmarkH, 64, BenchmarkResult)
+#undef CUSTOM_FUNC_PEAK
+#define CUSTOM_FUNC_PEAK(x, xLength) convolute_fft(\
+    fftHandle, x, BenchmarkH, BenchmarkResult)
+#undef ITER_COUNT
+#undef TEST_NAME
+#define TEST_NAME convolute_simd_vs_convolute_fft_64_64
+#define ITER_COUNT 80000
+#undef CUSTOM_CODE_PRE
+#define CUSTOM_CODE_PRE { fftHandle = convolute_fft_initialize(64, 64); }
+#include "tests/benchmark.inc"
+
+#undef LENGTH
+#define LENGTH 50
+#undef CUSTOM_FUNC_BASELINE
+#define CUSTOM_FUNC_BASELINE(x, xLength) convolute_simd(\
+    true, x, xLength, BenchmarkH, 50, BenchmarkResult)
+#undef CUSTOM_FUNC_PEAK
+#define CUSTOM_FUNC_PEAK(x, xLength) convolute_fft(\
+    fftHandle, x, BenchmarkH, BenchmarkResult)
+#undef ITER_COUNT
+#undef TEST_NAME
+#define TEST_NAME convolute_simd_vs_convolute_fft_50_50
+#define ITER_COUNT 80000
+#undef CUSTOM_CODE_PRE
+#define CUSTOM_CODE_PRE { fftHandle = convolute_fft_initialize(50, 50); }
+#include "tests/benchmark.inc"
+
+#undef LENGTH
+#define LENGTH 32
+#undef CUSTOM_FUNC_BASELINE
+#define CUSTOM_FUNC_BASELINE(x, xLength) convolute_simd(\
+    true, x, xLength, BenchmarkH, 32, BenchmarkResult)
+#undef CUSTOM_FUNC_PEAK
+#define CUSTOM_FUNC_PEAK(x, xLength) convolute_fft(\
+    fftHandle, x, BenchmarkH, BenchmarkResult)
+#undef ITER_COUNT
+#undef TEST_NAME
+#define TEST_NAME convolute_simd_vs_convolute_fft_32_32
+#define ITER_COUNT 80000
+#undef CUSTOM_CODE_PRE
+#define CUSTOM_CODE_PRE { fftHandle = convolute_fft_initialize(32, 32); }
+#include "tests/benchmark.inc"
+
+#endif
+
 
 #ifdef __AVX__
 #undef LENGTH

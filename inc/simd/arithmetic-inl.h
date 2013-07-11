@@ -220,7 +220,7 @@ INLINE NOTNULL(1, 3) void int32_to_float(const int32_t *data,
     _mm256_store_ps(res + i, fVec);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 3) << 3);
+  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
        i < length; i++) {
     res[i] = (float)data[i];
   }
@@ -240,7 +240,7 @@ INLINE NOTNULL(1, 3) void float_to_int32(const float *data,
     _mm256_store_si256((__m256i *)(res + i), intVec);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 3) << 3);
+  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
        i < length; i++) {
     res[i] = (int32_t)data[i];
   }
@@ -342,7 +342,7 @@ INLINE NOTNULL(1, 3) void int16_to_float(const int16_t *data,
     _mm_store_ps(res + i + 4, fhi);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 3) << 3);
+  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
       i < length; i++) {
     res[i] = (float)data[i];
   }
@@ -365,7 +365,7 @@ INLINE NOTNULL(1, 3) void float_to_int16(const float *data,
     _mm_store_si128((__m128i *)(res + i), int16Vec);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 3) << 3);
+  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
        i < length; i++) {
     res[i] = (int16_t)data[i];
   }
@@ -385,7 +385,7 @@ INLINE NOTNULL(1, 3) void int32_to_float(const int32_t *data,
     _mm_store_ps(res + i, fVec);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 2) << 2);
+  for (size_t i = startIndex + ((length - startIndex) & ~0x3);
        i < length; i++) {
     res[i] = (float)data[i];
   }
@@ -405,7 +405,7 @@ INLINE NOTNULL(1, 3) void float_to_int32(const float *data,
     _mm_store_si128((__m128i *)(res + i), intVec);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 2) << 2);
+  for (size_t i = startIndex + ((length - startIndex) & ~0x3);
        i < length; i++) {
     res[i] = (int32_t)data[i];
   }
@@ -430,7 +430,7 @@ INLINE NOTNULL(1, 3) void int16_to_int32(const int16_t *data,
     _mm_store_si128((__m128i *)(res + i + 4), inthi);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 3) << 3);
+  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
       i < length; i++) {
     res[i] = (int32_t)data[i];
   }
@@ -451,7 +451,7 @@ INLINE NOTNULL(1, 3) void int32_to_int16(const int32_t *data,
     _mm_store_si128((__m128i *)(res + i), int16Vec);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 3) << 3);
+  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
         i < length; i++) {
       res[i] = (int16_t)data[i];
   }
@@ -540,7 +540,7 @@ INLINE NOTNULL(1, 3) void complex_conjugate(
       _mm256_store_ps(res + i, vec);
     }
 
-    for (size_t i = startIndex + (((length - startIndex) >> 3) << 3) +
+    for (size_t i = startIndex + ((length - startIndex) & ~0x7) +
              1 - (startIndex % 2);
          i < length; i++) {
       res[i - 1] = array[i - 1];
@@ -554,7 +554,7 @@ INLINE NOTNULL(1, 3) void complex_conjugate(
       _mm256_storeu_ps(res + i, vec);
     }
 
-    for (size_t i = (((length - startIndex) >> 3) << 3) + 1;
+    for (size_t i = ((length - startIndex) & ~0x7) + 1;
          i < length; i++) {
       res[i - 1] = array[i - 1];
       res[i] = -array[i];
@@ -588,7 +588,7 @@ INLINE NOTNULL(1, 4) void real_multiply_scalar(const float *array,
       _mm256_store_ps(res + i, vec);
     }
 
-    for (size_t i = startIndex + (((length - startIndex) >> 3) << 3);
+    for (size_t i = startIndex + ((length - startIndex) & ~0x7);
          i < length; i++) {
       res[i] = array[i] * value;
     }
@@ -599,7 +599,7 @@ INLINE NOTNULL(1, 4) void real_multiply_scalar(const float *array,
       _mm256_storeu_ps(res + i, vec);
     }
 
-    for (size_t i = (((length - startIndex) >> 3) << 3);
+    for (size_t i = ((length - startIndex) & ~0x7);
          i < length; i++) {
       res[i] = array[i] * value;
     }
@@ -662,7 +662,7 @@ INLINE NOTNULL(1, 3) void int16_to_float(const int16_t *data,
     float32x4_t floatVec = vcvtq_f32_s32(extIntVec);
     vst1q_f32(res + i, floatVec);
   }
-  for (int i = ((ilength >> 2) << 2); i < (int)length; i++) {
+  for (int i = (ilength & ~0x3); i < (int)length; i++) {
     res[i] = (float)data[i];
   }
 }
@@ -676,7 +676,7 @@ INLINE NOTNULL(1, 3) void float_to_int16(const float *data,
     int16x4_t intVec = vqmovn_s32(extIntVec);
     vst1_s16(res + i, intVec);
   }
-  for (int i = ((ilength >> 2) << 2); i < ilength; i++) {
+  for (int i = (ilength & ~0x3); i < ilength; i++) {
     res[i] = (int16_t)data[i];
   }
 }
@@ -689,7 +689,7 @@ INLINE NOTNULL(1, 3) void int32_to_float(const int32_t *data,
     float32x4_t floatVec = vcvtq_f32_s32(intVec);
     vst1q_f32(res + i, floatVec);
   }
-  for (int i = ((ilength >> 2) << 2); i < ilength; i++) {
+  for (int i = (ilength & ~0x3); i < ilength; i++) {
     res[i] = (float)data[i];
   }
 }
@@ -702,7 +702,7 @@ INLINE NOTNULL(1, 3) void float_to_int32(const float *data,
     int32x4_t intVec = vcvtq_s32_f32(floatVec);
     vst1q_s32(res + i, intVec);
   }
-  for (int i = ((ilength >> 2) << 2); i < ilength; i++) {
+  for (int i = (ilength & ~0x3); i < ilength; i++) {
     res[i] = (int32_t)data[i];
   }
 }
@@ -715,7 +715,7 @@ INLINE NOTNULL(1, 3) void int16_to_int32(const int16_t *data,
     int32x4_t extIntVec = vmovl_s16(intVec);
     vst1q_s32(res + i, extIntVec);
   }
-  for (int i = ((ilength >> 2) << 2); i < ilength; i++) {
+  for (int i = (ilength & ~0x3); i < ilength; i++) {
     res[i] = (float)data[i];
   }
 }
@@ -728,7 +728,7 @@ INLINE NOTNULL(1, 3) void int32_to_int16(const int32_t *data,
     int16x4_t intVec = vqmovn_s32(extIntVec);
     vst1_s16(res + i, intVec);
   }
-  for (int i = ((ilength >> 2) << 2); i < ilength; i++) {
+  for (int i = (ilength & ~0x3); i < ilength; i++) {
     res[i] = (int16_t)data[i];
   }
 }
@@ -805,7 +805,7 @@ INLINE NOTNULL(1, 3) void complex_conjugate(const float *array,
     vec = vmulq_f32(vec, negVec);
     vst1q_f32(res + i, vec);
   }
-  for (int i = ((ilength >> 2) << 2) + 1; i < ilength; i++) {
+  for (int i = (ilength & ~0x3) + 1; i < ilength; i++) {
     res[i - 1] = array[i - 1];
     res[i] = -array[i];
   }
@@ -829,7 +829,7 @@ INLINE NOTNULL(1, 4) void real_multiply_scalar(const float *array,
     vec = vmulq_n_f32(vec, value);
     vst1q_f32(res + i, vec);
   }
-  for (int i = ((ilength >> 2) << 2); i < ilength; i++) {
+  for (int i = (ilength & ~0x3); i < ilength; i++) {
     res[i] = array[i] * value;
   }
 }
@@ -846,7 +846,7 @@ INLINE NOTNULL(1) float sum(const float *input, size_t length) {
   float32x2_t accum2 = vpadd_f32(vget_high_f32(accum),
                                  vget_low_f32(accum));
   float res = vget_lane_f32(accum2, 0) + vget_lane_f32(accum2, 1);
-  for (int j = ((ilength >> 3) << 3); j < ilength; j++) {
+  for (int j = (ilength & ~0x7); j < ilength; j++) {
     res += input[j];
   }
   return res;

@@ -246,11 +246,7 @@ static void wavelet_apply4(WaveletType type,
   assert(src && desthi && destlo);
 
   if (align_complement_f32(src) != 0 ||
-#ifdef __AVX__
       length < 8
-#elif defined(__ARM_NEON__)
-      length < 4
-#endif
   ) {
     wavelet_apply_na(type, 4, src, length, desthi, destlo);
     return;
@@ -286,34 +282,37 @@ static void wavelet_apply4(WaveletType type,
 #elif defined(__ARM_NEON__)
   const float32x4_t hivec = vld1q_f32(highpassC);
   const float32x4_t lovec = vld1q_f32(lowpassC);
-  for (int i = 0, di = 0; i < ilength - 2; i += 2, di++) {
-    float32x4_t srcvec = vld1q_f32(src + i);
+  for (int i = 0, di = 0; i < ilength - 6; i += 4, di += 2) {
+    float32x4_t srcvec1 = vld1q_f32(src + i);
+    float32x4_t srcvec2 = vld1q_f32(src + i + 2);
 
-    float32x4_t vechiadd = vmulq_f32(srcvec, hivec);
-    float32x4_t vecloadd = vmulq_f32(srcvec, lovec);
+    float32x4_t vechiadd1 = vmulq_f32(srcvec1, hivec);
+    float32x4_t vecloadd1 = vmulq_f32(srcvec1, lovec);
+    float32x4_t vechiadd2 = vmulq_f32(srcvec2, hivec);
+    float32x4_t vecloadd2 = vmulq_f32(srcvec2, lovec);
 
-    float32x2_t vechipair = vadd_f32(vget_high_f32(vechiadd),
-                                     vget_low_f32(vechiadd));
-    float32x2_t veclopair = vadd_f32(vget_high_f32(vecloadd),
-                                     vget_low_f32(vecloadd));
+    float32x2_t vechipair1 = vadd_f32(vget_high_f32(vechiadd1),
+                                      vget_low_f32(vechiadd1));
+    float32x2_t veclopair1 = vadd_f32(vget_high_f32(vecloadd1),
+                                      vget_low_f32(vecloadd1));
+    float32x2_t vechipair2 = vadd_f32(vget_high_f32(vechiadd2),
+                                      vget_low_f32(vechiadd2));
+    float32x2_t veclopair2 = vadd_f32(vget_high_f32(vecloadd2),
+                                      vget_low_f32(vecloadd2));
 
-    float32x2_t vecres = vpadd_f32(vechipair, veclopair);
+    float32x2_t vecres1 = vpadd_f32(vechipair1, veclopair1);
+    float32x2_t vecres2 = vpadd_f32(vechipair2, veclopair2);
 
-    float reshi = vget_lane_f32(vecres, 0);
-    float reslo = vget_lane_f32(vecres, 1);
-
-    desthi[di] = reshi;
-    destlo[di] = reslo;
+    desthi[di] = vget_lane_f32(vecres1, 0);
+    destlo[di] = vget_lane_f32(vecres1, 1);
+    desthi[di + 1] = vget_lane_f32(vecres2, 0);
+    destlo[di + 1] = vget_lane_f32(vecres2, 1);
   }
 #else
 #error This SIMD variant is not supported.
 #endif  // #elif defined(__ARM_NEON__)
   // Finish with the extended end
-#ifdef __AVX__
   for (int i = ilength - 6, di = (ilength - 6) / 2;
-#elif defined(__ARM_NEON__)
-  for (int i = ilength - 2, di = (ilength - 2) / 2;
-#endif
        i < ilength; i += 2, di++) {
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 4; j++) {
@@ -392,16 +391,12 @@ static void wavelet_apply6(WaveletType type,
     float32x2_t veclopair = vadd_f32(vget_high_f32(vecloadd1),
                                      vget_low_f32(vecloadd1));
 
-    vadd_f32(vechipair, vechiadd2);
-    vadd_f32(veclopair, vecloadd2);
-
+    vechipair = vadd_f32(vechipair, vechiadd2);
+    veclopair = vadd_f32(veclopair, vecloadd2);
     float32x2_t vecres = vpadd_f32(vechipair, veclopair);
 
-    float reshi = vget_lane_f32(vecres, 0);
-    float reslo = vget_lane_f32(vecres, 1);
-
-    desthi[di] = reshi;
-    destlo[di] = reslo;
+    desthi[di] = vget_lane_f32(vecres, 0);
+    destlo[di] = vget_lane_f32(vecres, 1);
   }
 #else
 #error This SIMD variant is not supported.
@@ -486,11 +481,8 @@ static void wavelet_apply8(WaveletType type,
 
     float32x2_t vecres = vpadd_f32(vechipair, veclopair);
 
-    float reshi = vget_lane_f32(vecres, 0);
-    float reslo = vget_lane_f32(vecres, 1);
-
-    desthi[di] = reshi;
-    destlo[di] = reslo;
+    desthi[di] = vget_lane_f32(vecres, 0);
+    destlo[di] = vget_lane_f32(vecres, 1);
   }
 #else
 #error This SIMD variant is not supported.
@@ -599,11 +591,8 @@ static void wavelet_apply12(WaveletType type,
 
     float32x2_t vecres = vpadd_f32(vechipair, veclopair);
 
-    float reshi = vget_lane_f32(vecres, 0);
-    float reslo = vget_lane_f32(vecres, 1);
-
-    desthi[di] = reshi;
-    destlo[di] = reslo;
+    desthi[di] = vget_lane_f32(vecres, 0);
+    destlo[di] = vget_lane_f32(vecres, 1);
   }
 #else
 #error This SIMD variant is not supported.

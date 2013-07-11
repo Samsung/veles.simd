@@ -24,6 +24,10 @@ void matrix_multiply(int simd, const float *m1, const float *m2,
                      size_t w1, size_t h1, size_t w2, size_t h2,
                      float *res) NOTNULL(2,3,8);
 
+void matrix_multiply_transposed(int simd, const float *m1, const float *m2,
+                                size_t w1, size_t h1, size_t w2, size_t h2,
+                                float *res) NOTNULL(2,3,8);
+
 #ifdef __cplusplus
 }
 #endif

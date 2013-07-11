@@ -140,6 +140,7 @@ TEST(Wavelet, wavelet_apply) {
 
   for (auto wp : wavelets) {
     for (int order : wp.second) {
+      printf("Testing order %i...\n", order);
       wavelet_apply(wp.first, order, prep, length, desthi, destlo);
       float validdesthi[length / 2], validdestlo[length / 2];
       wavelet_apply_na(wp.first, order, array, length,

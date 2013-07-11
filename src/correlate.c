@@ -87,7 +87,7 @@ void cross_correlate_simd(int simd,
       for (int m = beg; m < simdEnd; m += 4) {
         float32x4_t xvec = vld1q_f32(x + m);
         float32x4_t hvec = vld1q_f32(h + n + m);
-        accum = vmlaq_f32(xvec, hvec, accum);
+        accum = vmlaq_f32(accum, xvec, hvec);
       }
       float32x2_t accum2 = vpadd_f32(vget_high_f32(accum),
                                      vget_low_f32(accum));

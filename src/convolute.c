@@ -54,9 +54,10 @@ void convolute_simd(int simd,
       float32x4_t accum = vdupq_n_f32(0.f);
       for (int m = beg; m < simdEnd; m += 4) {
         float32x4_t xvec = vld1q_f32(x + n - m - 3);
-        xvec = vrev64q_f32(xvec);
         float32x4_t hvec = vld1q_f32(h + m);
-        accum = vmlaq_f32(xvec, hvec, accum);
+        xvec = vrev64q_f32(xvec);
+        xvec = vcombine_f32(vget_high_f32(xvec), vget_low_f32(xvec));
+        accum = vmlaq_f32(accum, xvec, hvec);
       }
       float32x2_t accum2 = vpadd_f32(vget_high_f32(accum),
                                      vget_low_f32(accum));
@@ -316,7 +317,7 @@ ConvoluteHandle convolute_initialize(size_t xLength, size_t hLength) {
       handle.algorithm = kConvolutionAlgorithmBruteForce;
     }
   } else {
-    if (xLength > 300) {
+    if (xLength > 50) {
       handle.algorithm = kConvolutionAlgorithmFFT;
       handle.handle.fft = convolute_fft_initialize(xLength, hLength);
     } else {
