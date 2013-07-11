@@ -38,7 +38,7 @@ AS_IF([test "x$enable_simd_fftf" == "xno"], [
 AC_ARG_WITH([built-in-fftf],
     AS_HELP_STRING([--with-built-in-fftf],
     [use FFTF build directory from built-in-fftf file]),
-    [FFTF_LIBS="\$(abs_top_builddir)/$(cat built-in-fftf)/src/libfftf.la"]
+    [FFTF_LIBS="$(cat built-in-fftf)/src/libfftf.la"]
 )
 
 AS_IF([test "x$with_built_in_fftf" != "xyes" -a "x$enable_simd_fftf" != "xno"], [
