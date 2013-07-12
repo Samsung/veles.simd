@@ -61,6 +61,37 @@ TEST(Multiply, SIMD) {
   free(res_simd);
 }
 
+TEST(Multiply, SIMDUglyLength) {
+  float *m1 = mallocf(125 * 299);
+  for (int i = 0; i < 299; i++) {
+    for (int j = 0; j < 125; j++) {
+      m1[i * 125 + j] = -j % 17 + i % 6;
+    }
+  }
+  float *m2 = mallocf(999 * 125);
+  for (int i = 0; i < 125; i++) {
+    for (int j = 0; j < 999; j++) {
+      m2[i * 999 + j] = j % 15 - i % 5;
+    }
+  }
+
+  float *res_base = mallocf(999 * 299);
+  float *res_simd = mallocf(999 * 299);
+  matrix_multiply(0, m1, m2, 125, 299, 999, 125, res_base);
+  matrix_multiply(1, m1, m2, 125, 299, 999, 125, res_simd);
+
+  for (int i = 0; i < 299; i++) {
+    for (int j = 0; j < 999; j++) {
+      ASSERT_NEAR(res_base[i * 999 + j], res_simd[i * 999 + j], 0.1);
+    }
+  }
+
+  free(m1);
+  free(m2);
+  free(res_base);
+  free(res_simd);
+}
+
 TEST(MultiplyTransposed, Validate) {
   float m1[6] = { 1, 2, 3,
                  -2, 0, 4 };
@@ -99,6 +130,37 @@ TEST(MultiplyTransposed, SIMD) {
   for (int i = 0; i < 300; i++) {
     for (int j = 0; j < 1000; j++) {
       ASSERT_NEAR(res_base[i * 1000 + j], res_simd[i * 1000 + j], 0.1);
+    }
+  }
+
+  free(m1);
+  free(m2);
+  free(res_base);
+  free(res_simd);
+}
+
+TEST(MultiplyTransposed, SIMDUglyLength) {
+  float *m1 = mallocf(125 * 299);
+  for (int i = 0; i < 299; i++) {
+    for (int j = 0; j < 125; j++) {
+      m1[i * 125 + j] = -j % 17 + i % 6;
+    }
+  }
+  float *m2 = mallocf(125 * 999);
+  for (int i = 0; i < 999; i++) {
+    for (int j = 0; j < 125; j++) {
+      m2[i * 125 + j] = j % 15 - i % 5;
+    }
+  }
+
+  float *res_base = mallocf(999 * 299);
+  float *res_simd = mallocf(999 * 299);
+  matrix_multiply_transposed(0, m1, m2, 125, 299, 125, 999, res_base);
+  matrix_multiply_transposed(1, m1, m2, 125, 299, 125, 999, res_simd);
+
+  for (int i = 0; i < 299; i++) {
+    for (int j = 0; j < 999; j++) {
+      ASSERT_NEAR(res_base[i * 999 + j], res_simd[i * 999 + j], 0.1);
     }
   }
 
