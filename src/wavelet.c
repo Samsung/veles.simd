@@ -33,12 +33,14 @@ INLINE void check_length(size_t length) {
   assert(length % 2 == 0);
 }
 
-INLINE size_t aligned_length(size_t length, size_t alignment) {
-  size_t ex = length % alignment;
-  if (ex == 0) {
-    return length;
-  }
-  return length + alignment - ex;
+INLINE size_t aligned_length(size_t length) {
+  --length;
+  length |= length >> 1;
+  length |= length >> 2;
+  length |= length >> 4;
+  length |= length >> 8;
+  length |= length >> 16;
+  return length + 1;
 }
 
 INLINE NOTNULL(2, 4) void wavelet_prepare_array_memcpy(
@@ -50,7 +52,7 @@ INLINE NOTNULL(2, 4) void wavelet_prepare_array_memcpy(
   }
 
   if (length > 8) {
-    size_t alength = aligned_length(length, 8);
+    size_t alength = aligned_length(length);
     int copySize = (alength - 8) * sizeof(float);
     memcpy(res + alength,          src + 2, copySize);
     if (order > 4) {
@@ -91,7 +93,7 @@ float *wavelet_prepare_array(int order
   float *res = mallocf(length);
   memcpy(res, src, length * sizeof(src[0]));
 #else
-  size_t alength = aligned_length(length, 8);
+  size_t alength = aligned_length(length);
   float *res = mallocf(alength * (order > 4? 4 : 2));
   wavelet_prepare_array_memcpy(order, src, length, res);
 #endif
@@ -109,7 +111,7 @@ float *wavelet_allocate_destination(int order
 #ifndef __AVX__
   float *res = mallocf(sourceLength / 2);
 #else
-  size_t alength = aligned_length(sourceLength, 8);
+  size_t alength = aligned_length(sourceLength);
   float *res = mallocf(alength * (order > 4? 2 : 1));
 #endif
   return res;
@@ -133,7 +135,7 @@ void wavelet_recycle_source(int order
 #ifndef __AVX__
   int lq = length / 4;
 #else
-  int lq = aligned_length(length, 8) / (order > 4? 1 : 2);
+  int lq = aligned_length(length) / (order > 4? 1 : 2);
   if (length < 16) {
     lq = length / 4;
   }
@@ -262,7 +264,7 @@ static void wavelet_apply4(WaveletType type,
 
   const __m256 hpvec = _mm256_load_ps(highpassC);
   const __m256 lpvec = _mm256_load_ps(lowpassC);
-  size_t alength = aligned_length(length, 8);
+  size_t alength = aligned_length(length);
   for (int i = 0, di = 0; i < ilength - 6; i += 8, di += 4) {
     __m256 srcvec1 = _mm256_load_ps(src + i);
     __m256 srcvec2 = _mm256_load_ps(src + i + alength);
@@ -360,7 +362,7 @@ static void wavelet_apply6(WaveletType type,
   lowpassC[7] = 0.f;
   const __m256 hpvec = _mm256_load_ps(highpassC);
   const __m256 lpvec = _mm256_load_ps(lowpassC);
-  size_t alength = aligned_length(length, 8);
+  size_t alength = aligned_length(length);
   for (int i = 0, di = 0; i < ilength - 6; i += 2, di++) {
     int ex = (i / 2) % 4;
     int offset = i + (ex > 0? ex * (alength - 10) + 8 : 0);
@@ -448,7 +450,7 @@ static void wavelet_apply8(WaveletType type,
 #ifdef __AVX__
   const __m256 hpvec = _mm256_load_ps(highpassC);
   const __m256 lpvec = _mm256_load_ps(lowpassC);
-  size_t alength = aligned_length(length, 8);
+  size_t alength = aligned_length(length);
   for (int i = 0, di = 0; i < ilength - 6; i += 2, di++) {
     int ex = (i / 2) % 4;
     int offset = i + (ex > 0? ex * (alength - 10) + 8 : 0);
@@ -548,7 +550,7 @@ static void wavelet_apply12(WaveletType type,
   const __m256 lpvec1 = _mm256_load_ps(lowpassC);
   const __m256 hpvec2 = _mm256_load_ps(&highpassC[8]);
   const __m256 lpvec2 = _mm256_load_ps(&lowpassC[8]);
-  size_t alength = aligned_length(length, 8);
+  size_t alength = aligned_length(length);
   for (int i = 0, di = 0; i < ilength - 14; i += 2, di++) {
     int ex = (i / 2) % 4;
     int offset = i + (ex > 0? ex * (alength - 10) + 8 : 0);
@@ -648,7 +650,7 @@ static void wavelet_apply16(WaveletType type,
   const __m256 lpvec1 = _mm256_load_ps(lowpassC);
   const __m256 hpvec2 = _mm256_load_ps(&highpassC[8]);
   const __m256 lpvec2 = _mm256_load_ps(&lowpassC[8]);
-  size_t alength = aligned_length(length, 8);
+  size_t alength = aligned_length(length);
   for (int i = 0, di = 0; i < ilength - 14; i += 2, di++) {
     int ex = (i / 2) % 4;
     int offset = i + (ex > 0? ex * (alength - 10) + 8 : 0);
