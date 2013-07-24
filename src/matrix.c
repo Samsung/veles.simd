@@ -172,16 +172,17 @@ void matrix_multiply(int simd, const float *m1, const float *m2,
   assert(w1 > 0);
   assert(h1 > 0);
   assert(w2 > 0);
-  if (!simd) {
-    matrix_multiply_novec(m1, m2, w1, h1, w2, h2, res);
-  } else {
+  if (simd) {
 #ifdef __ARM_NEON__
     matrix_multiply_neon(m1, m2, w1, h1, w2, h2, res);
+  } else {
 #elif defined(__AVX__)
     matrix_multiply_avx(m1, m2, w1, h1, w2, h2, res);
+  } else {
 #else
-#error SIMD version of this function is not implemented for the selected target
-#endif
+  } {
+#endif    
+    matrix_multiply_novec(m1, m2, w1, h1, w2, h2, res);
   }
 }
 
