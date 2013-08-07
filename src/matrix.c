@@ -20,6 +20,14 @@
 #include <arm_neon.h>
 #endif
 
+static void matrix_add_novec(const float *m1, const float *m2,
+                      size_t w, size_t h, float *res) {
+  int size = (int)w * (int)h;
+  for (int i = 0; i < size; i++) {
+    res[i] = m1[i] + m2[i];
+  }
+}
+
 static void matrix_multiply_novec(const float *m1, const float *m2,
                                   size_t w1, size_t h1, size_t w2,
                                   size_t h2 UNUSED, float *res) {
@@ -50,6 +58,12 @@ static void matrix_multiply_transposed_novec(const float *m1, const float *m2,
 }
 
 #ifdef __ARM_NEON__
+// TODO(e.sanches): Implement ARM NEON version
+static void matrix_add_neon(const float *m1, const float *m2,
+                            size_t w, size_t h, float *res) {
+  matrix_add_novec(m1, m2, w, h, res);
+}
+
 static void matrix_multiply_neon(const float *m1, const float *m2,
                                  size_t w1, size_t h1, size_t w2,
                                  size_t h2 UNUSED, float *res) {
@@ -107,6 +121,12 @@ static void matrix_multiply_transposed_neon(const float *m1, const float *m2,
 #endif
 
 #ifdef __AVX__
+// TODO(e.sanches): Implement AVX version
+static void matrix_add_avx(const float *m1, const float *m2,
+                           size_t w, size_t h, float *res) {
+  matrix_add_novec(m1, m2, w, h, res);
+}
+
 static void matrix_multiply_avx(const float *m1, const float *m2,
                                 size_t w1, size_t h1, size_t w2,
                                 size_t h2 UNUSED, float *res) {
@@ -161,6 +181,27 @@ static void matrix_multiply_transposed_avx(const float *m1, const float *m2,
   }
 }
 #endif
+
+void matrix_add(int simd, const float *m1, const float *m2,
+                size_t w, size_t h, float *res) {
+  assert(m1);
+  assert(m2);
+  assert(res);
+  assert(w > 0);
+  assert(h > 0);
+  if (simd) {
+#ifdef __ARM_NEON__
+    matrix_add_neon(m1, m2, w, h, res);
+  } else {
+#elif defined(__AVX__)
+    matrix_add_avx(m1, m2, w, h, res);
+  } else {
+#else
+  } {
+#endif
+    matrix_add_novec(m1, m2, w, h, res);
+  }
+}
 
 void matrix_multiply(int simd, const float *m1, const float *m2,
                      size_t w1, size_t h1, size_t w2, size_t h2,

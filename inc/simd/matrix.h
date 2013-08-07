@@ -20,6 +20,15 @@
 extern "C" {
 #endif
 
+/// @brief Sums two matrices.
+/// @param simd Value which indicates whether to use SIMD acceleration or not.
+/// @param m1 The first matrix
+/// @param m2 The second matrix
+/// @param w The width of the matrices (the number of columns)
+/// @param h The height of the matrices (the number of rows)
+/// @param res The resulting matrix of the same size
+void matrix_add(int simd, const float *m1, const float *m2,
+                size_t w, size_t h, float *res) NOTNULL(2,3,6);
 /// @brief Multiplies two matrices.
 /// @param simd Value which indicates whether to use SIMD acceleration or not.
 /// @param m1 The first matrix in row-major format.

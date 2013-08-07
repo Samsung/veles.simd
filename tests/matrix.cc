@@ -15,6 +15,20 @@
 #include <simd/matrix.h>
 #include <simd/memory.h>
 
+TEST(Add, Validate) {
+  float m1[6] = { 1, 2, 3,
+                 -2, 0, 4 };
+  float m2[6] = { 0, 1, 3,
+                  5, -1, 2 };
+  float res[6];
+  float res_valid[6] = { 1, 3, 6,
+                         3, -1, 6 };
+  matrix_add(0, m1, m2, 3, 2, res);
+  for (int i = 0; i < 6; i++) {
+    ASSERT_NEAR(res[i], res_valid[i], 0.01);
+  }
+}
+
 TEST(Multiply, Validate) {
   float m1[6] = { 1, 2, 3,
                  -2, 0, 4 };
