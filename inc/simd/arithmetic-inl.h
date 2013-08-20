@@ -161,13 +161,14 @@ INLINE NOTNULL(1, 2, 3) void int16_multiply(
 /// @note res must have at least the same length as data.
 INLINE NOTNULL(1, 3) void int16_to_float(const int16_t *data,
                                          size_t length, float *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_i16(data);
   assert(startIndex % 8 == align_complement_f32(res) % 8);
   for (int i = 0; i < startIndex; i++) {
     res[i] = (float)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 15; i += 16) {
+  for (int i = startIndex; i < ilength - 15; i += 16) {
     __m256i intVec = _mm256_load_si256((const __m256i*)(data + i));
     __m256i intlo = _mm256_unpacklo_epi16(intVec, _mm256_set1_epi16(0));
     __m256i inthi = _mm256_unpackhi_epi16(intVec, _mm256_set1_epi16(0));
@@ -177,21 +178,22 @@ INLINE NOTNULL(1, 3) void int16_to_float(const int16_t *data,
     _mm256_store_ps(res + i + 8, fhi);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 4) << 4);
-      i < length; i++) {
+  for (int i = startIndex + (((ilength - startIndex) >> 4) << 4);
+      i < ilength; i++) {
     res[i] = (float)data[i];
   }
 }
 
 INLINE NOTNULL(1, 3) void float_to_int16(const float *data,
                                          size_t length, int16_t *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_f32(data);
   assert(startIndex % 16 == align_complement_i16(res) % 16);
   for (int i = 0; i < startIndex; i++) {
     res[i] = (int16_t)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 15; i += 16) {
+  for (int i = startIndex; i < ilength - 15; i += 16) {
     __m256 fVecHi = _mm256_load_ps(data + i);
     __m256 fVecLo = _mm256_load_ps(data + i + 8);
     __m256i intVecHi = _mm256_cvttps_epi32(fVecHi);
@@ -200,61 +202,64 @@ INLINE NOTNULL(1, 3) void float_to_int16(const float *data,
     _mm256_store_si256((__m256i *)(res + i), int16Vec);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 4) << 4);
-       i < length; i++) {
+  for (int i = startIndex + (((ilength - startIndex) >> 4) << 4);
+       i < ilength; i++) {
     res[i] = (int16_t)data[i];
   }
 }
 
 INLINE NOTNULL(1, 3) void int32_to_float(const int32_t *data,
                                          size_t length, float *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_i32(data);
   assert(startIndex == align_complement_f32(res));
   for (int i = 0; i < startIndex; i++) {
     res[i] = (float)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 7; i += 8) {
+  for (int i = startIndex; i < ilength - 7; i += 8) {
     __m256i intVec = _mm256_load_si256((const __m256i*)(data + i));
     __m256 fVec = _mm256_cvtepi32_ps(intVec);
     _mm256_store_ps(res + i, fVec);
   }
 
-  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
-       i < length; i++) {
+  for (int i = startIndex + ((ilength - startIndex) & ~0x7);
+       i < ilength; i++) {
     res[i] = (float)data[i];
   }
 }
 
 INLINE NOTNULL(1, 3) void float_to_int32(const float *data,
                                          size_t length, int32_t *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_f32(data);
   assert(startIndex == align_complement_i32(res));
   for (int i = 0; i < startIndex; i++) {
     res[i] = (int16_t)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 7; i += 8) {
+  for (int i = startIndex; i < ilength - 7; i += 8) {
     __m256 fVec = _mm256_load_ps(data + i);
     __m256i intVec = _mm256_cvttps_epi32(fVec);
     _mm256_store_si256((__m256i *)(res + i), intVec);
   }
 
-  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
-       i < length; i++) {
+  for (int i = startIndex + ((ilength - startIndex) & ~0x7);
+       i < ilength; i++) {
     res[i] = (int32_t)data[i];
   }
 }
 
 INLINE NOTNULL(1, 3) void int16_to_int32(const int16_t *data,
                                          size_t length, int32_t *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_i16(data);
   assert(startIndex % 8 == align_complement_i32(res) % 8);
   for (int i = 0; i < startIndex; i++) {
     res[i] = (float)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 15; i += 16) {
+  for (int i = startIndex; i < ilength - 15; i += 16) {
     __m256i intVec = _mm256_load_si256((const __m256i*)(data + i));
     __m256i intlo = _mm256_unpacklo_epi16(intVec, _mm256_set1_epi16(0));
     __m256i inthi = _mm256_unpackhi_epi16(intVec, _mm256_set1_epi16(0));
@@ -262,29 +267,30 @@ INLINE NOTNULL(1, 3) void int16_to_int32(const int16_t *data,
     _mm256_store_si256((__m256i *)(res + i + 8), inthi);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 4) << 4);
-      i < length; i++) {
+  for (int i = startIndex + (((ilength - startIndex) >> 4) << 4);
+      i < ilength; i++) {
     res[i] = (int32_t)data[i];
   }
 }
 
 INLINE NOTNULL(1, 3) void int32_to_int16(const int32_t *data,
                                          size_t length, int16_t *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_i32(data);
   assert(startIndex % 16 == align_complement_i16(res) % 16);
   for (int i = 0; i < startIndex; i++) {
     res[i] = (int16_t)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 15; i += 16) {
+  for (int i = startIndex; i < ilength - 15; i += 16) {
     __m256i intVecHi = _mm256_load_si256((const __m256i*)(data + i));
     __m256i intVecLo = _mm256_load_si256((const __m256i*)(data + i + 4));
     __m256i int16Vec = _mm256_packs_epi32(intVecHi, intVecLo);
     _mm256_store_si256((__m256i *)(res + i), int16Vec);
   }
 
-  for (size_t i = startIndex + (((length - startIndex) >> 4) << 4);
-        i < length; i++) {
+  for (int i = startIndex + (((ilength - startIndex) >> 4) << 4);
+        i < ilength; i++) {
       res[i] = (int16_t)data[i];
   }
 }
@@ -323,13 +329,14 @@ INLINE NOTNULL(1, 2, 3) void int16_multiply(
 /// @note res must have at least the same length as data.
 INLINE NOTNULL(1, 3) void int16_to_float(const int16_t *data,
                                          size_t length, float *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_i16(data);
   assert(startIndex % 4 == align_complement_f32(res) % 4);
   for (int i = 0; i < startIndex; i++) {
     res[i] = (float)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 7; i += 8) {
+  for (int i = startIndex; i < ilength - 7; i += 8) {
     __m128i intVec = _mm_load_si128((const __m128i*)(data + i));
     // Be careful with the sign bit as it should remain on the leftmost place
     __m128i intlo = _mm_unpacklo_epi16(_mm_set1_epi16(0), intVec);
@@ -342,21 +349,22 @@ INLINE NOTNULL(1, 3) void int16_to_float(const int16_t *data,
     _mm_store_ps(res + i + 4, fhi);
   }
 
-  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
-      i < length; i++) {
+  for (int i = startIndex + ((ilength - startIndex) & ~0x7);
+      i < ilength; i++) {
     res[i] = (float)data[i];
   }
 }
 
 INLINE NOTNULL(1, 3) void float_to_int16(const float *data,
                                          size_t length, int16_t *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_f32(data);
   assert(startIndex % 8 == align_complement_i16(res) % 8);
   for (int i = 0; i < startIndex; i++) {
     res[i] = (int16_t)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 7; i += 8) {
+  for (int i = startIndex; i < ilength - 7; i += 8) {
     __m128 fVecHi = _mm_load_ps(data + i);
     __m128 fVecLo = _mm_load_ps(data + i + 4);
     __m128i intVecHi = _mm_cvttps_epi32(fVecHi);
@@ -365,61 +373,64 @@ INLINE NOTNULL(1, 3) void float_to_int16(const float *data,
     _mm_store_si128((__m128i *)(res + i), int16Vec);
   }
 
-  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
-       i < length; i++) {
+  for (int i = startIndex + ((ilength - startIndex) & ~0x7);
+       i < ilength; i++) {
     res[i] = (int16_t)data[i];
   }
 }
 
 INLINE NOTNULL(1, 3) void int32_to_float(const int32_t *data,
                                          size_t length, float *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_i32(data);
   assert(startIndex == align_complement_f32(res));
   for (int i = 0; i < startIndex; i++) {
     res[i] = (float)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 3; i += 4) {
+  for (int i = startIndex; i < ilength - 3; i += 4) {
     __m128i intVec = _mm_load_si128((const __m128i*)(data + i));
     __m128 fVec = _mm_cvtepi32_ps(intVec);
     _mm_store_ps(res + i, fVec);
   }
 
-  for (size_t i = startIndex + ((length - startIndex) & ~0x3);
-       i < length; i++) {
+  for (int i = startIndex + ((ilength - startIndex) & ~0x3);
+       i < ilength; i++) {
     res[i] = (float)data[i];
   }
 }
 
 INLINE NOTNULL(1, 3) void float_to_int32(const float *data,
                                          size_t length, int32_t *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_f32(data);
   assert(startIndex == align_complement_i32(res));
   for (int i = 0; i < startIndex; i++) {
     res[i] = (int16_t)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 3; i += 4) {
+  for (int i = startIndex; i < ilength - 3; i += 4) {
     __m128 fVec = _mm_load_ps(data + i);
     __m128i intVec = _mm_cvttps_epi32(fVec);
     _mm_store_si128((__m128i *)(res + i), intVec);
   }
 
-  for (size_t i = startIndex + ((length - startIndex) & ~0x3);
-       i < length; i++) {
+  for (int i = startIndex + ((ilength - startIndex) & ~0x3);
+       i < ilength; i++) {
     res[i] = (int32_t)data[i];
   }
 }
 
 INLINE NOTNULL(1, 3) void int16_to_int32(const int16_t *data,
                                          size_t length, int32_t *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_i16(data);
   assert(startIndex % 4 == align_complement_i32(res) % 4);
   for (int i = 0; i < startIndex; i++) {
     res[i] = (float)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 7; i += 8) {
+  for (int i = startIndex; i < ilength - 7; i += 8) {
     __m128i intVec = _mm_load_si128((const __m128i*)(data + i));
     // Be careful with the sign bit as it should remain on the leftmost place
     __m128i intlo = _mm_unpacklo_epi16(_mm_set1_epi16(0), intVec);
@@ -430,29 +441,30 @@ INLINE NOTNULL(1, 3) void int16_to_int32(const int16_t *data,
     _mm_store_si128((__m128i *)(res + i + 4), inthi);
   }
 
-  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
-      i < length; i++) {
+  for (int i = startIndex + ((ilength - startIndex) & ~0x7);
+      i < ilength; i++) {
     res[i] = (int32_t)data[i];
   }
 }
 
 INLINE NOTNULL(1, 3) void int32_to_int16(const int32_t *data,
                                          size_t length, int16_t *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_i32(data);
   assert(startIndex % 8 == align_complement_i16(res) % 8);
   for (int i = 0; i < startIndex; i++) {
     res[i] = (int16_t)data[i];
   }
 
-  for (size_t i = startIndex; i < length - 7; i += 8) {
+  for (int i = startIndex; i < ilength - 7; i += 8) {
     __m128i intVecHi = _mm_load_si128((const __m128i*)(data + i));
     __m128i intVecLo = _mm_load_si128((const __m128i*)(data + i + 4));
     __m128i int16Vec = _mm_packs_epi32(intVecHi, intVecLo);
     _mm_store_si128((__m128i *)(res + i), int16Vec);
   }
 
-  for (size_t i = startIndex + ((length - startIndex) & ~0x7);
-        i < length; i++) {
+  for (int i = startIndex + ((ilength - startIndex) & ~0x7);
+        i < ilength; i++) {
       res[i] = (int16_t)data[i];
   }
 }
@@ -524,6 +536,7 @@ INLINE NOTNULL(1, 2, 3) void complex_multiply_conjugate(
 /// @param res The result.
 INLINE NOTNULL(1, 3) void complex_conjugate(
     const float *array, size_t length, float *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_f32(array);
   if (startIndex == align_complement_f32(res)) {
     for (int i = 1; i < startIndex; i += 2) {
@@ -534,28 +547,28 @@ INLINE NOTNULL(1, 3) void complex_conjugate(
     const __m256 mulVec = (startIndex % 2 == 0)?
       _mm256_set_ps(-1, 1, -1, 1, -1, 1, -1, 1) :
       _mm256_set_ps(1, -1, 1, -1, 1, -1, 1, -1);
-    for (size_t i = startIndex; i < length - 7; i += 8) {
+    for (int i = startIndex; i < ilength - 7; i += 8) {
       __m256 vec = _mm256_load_ps(array + i);
       vec = _mm256_mul_ps(vec, mulVec);
       _mm256_store_ps(res + i, vec);
     }
 
-    for (size_t i = startIndex + ((length - startIndex) & ~0x7) +
+    for (int i = startIndex + ((ilength - startIndex) & ~0x7) +
              1 - (startIndex % 2);
-         i < length; i++) {
+         i < ilength; i++) {
       res[i - 1] = array[i - 1];
       res[i] = -array[i];
     }
   } else {
     const __m256 mulVec = _mm256_set_ps(-1, 1, -1, 1, -1, 1, -1, 1);
-    for (size_t i = 0; i < length - 7; i += 8) {
+    for (int i = 0; i < ilength - 7; i += 8) {
       __m256 vec = _mm256_loadu_ps(array + i);
       vec = _mm256_mul_ps(vec, mulVec);
       _mm256_storeu_ps(res + i, vec);
     }
 
-    for (size_t i = ((length - startIndex) & ~0x7) + 1;
-         i < length; i++) {
+    for (int i = ((ilength - startIndex) & ~0x7) + 1;
+         i < ilength; i++) {
       res[i - 1] = array[i - 1];
       res[i] = -array[i];
     }
@@ -575,6 +588,7 @@ INLINE NOTNULL(1, 3) void complex_conjugate(
 INLINE NOTNULL(1, 4) void real_multiply_scalar(const float *array,
                                                size_t length,
                                                float value, float *res) {
+  int ilength = (int)length;
   int startIndex = align_complement_f32(array);
   const __m256 mulVec = _mm256_set_ps(value, value, value, value,
                                       value, value, value, value);
@@ -582,25 +596,25 @@ INLINE NOTNULL(1, 4) void real_multiply_scalar(const float *array,
     for (int i = 0; i < startIndex; i++) {
       res[i] = array[i] * value;
     }
-    for (size_t i = startIndex; i < length - 7; i += 8) {
+    for (int i = startIndex; i < ilength - 7; i += 8) {
       __m256 vec = _mm256_load_ps(array + i);
       vec = _mm256_mul_ps(vec, mulVec);
       _mm256_store_ps(res + i, vec);
     }
 
-    for (size_t i = startIndex + ((length - startIndex) & ~0x7);
-         i < length; i++) {
+    for (int i = startIndex + ((ilength - startIndex) & ~0x7);
+         i < ilength; i++) {
       res[i] = array[i] * value;
     }
   } else {
-    for (size_t i = 0; i < length - 7; i += 8) {
+    for (int i = 0; i < ilength - 7; i += 8) {
       __m256 vec = _mm256_loadu_ps(array + i);
       vec = _mm256_mul_ps(vec, mulVec);
       _mm256_storeu_ps(res + i, vec);
     }
 
-    for (size_t i = ((length - startIndex) & ~0x7);
-         i < length; i++) {
+    for (int i = ((ilength - startIndex) & ~0x7);
+         i < ilength; i++) {
       res[i] = array[i] * value;
     }
   }
