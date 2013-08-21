@@ -58,10 +58,19 @@ static void matrix_multiply_transposed_novec(const float *m1, const float *m2,
 }
 
 #ifdef __ARM_NEON__
-// TODO(e.sanches): Implement ARM NEON version
 static void matrix_add_neon(const float *m1, const float *m2,
                             size_t w, size_t h, float *res) {
-  matrix_add_novec(m1, m2, w, h, res);
+  int length = (int)w * (int)h;
+  int i = 0;
+  for (; i < length - 3; i += 4) {
+    float32x4_t vec1 = vld1q_f32(m1 + i);
+    float32x4_t vec2 = vld1q_f32(m2 + i);
+    float32x4_t vec_r = vaddq_f32(vec1, vec2);
+    vstq_f32(vec_r, res + i);
+  }
+  for (; i < length; i++) {
+    res[i] = m1[i] + m2[i];
+  }
 }
 
 static void matrix_multiply_neon(const float *m1, const float *m2,
@@ -121,10 +130,19 @@ static void matrix_multiply_transposed_neon(const float *m1, const float *m2,
 #endif
 
 #ifdef __AVX__
-// TODO(e.sanches): Implement AVX version
 static void matrix_add_avx(const float *m1, const float *m2,
                            size_t w, size_t h, float *res) {
-  matrix_add_novec(m1, m2, w, h, res);
+  int length = (int)w * (int)h;
+  int i = 0;
+  for (; i < length - 7; i += 8) {
+    __m256 vec1 = _mm256_loadu_ps(m1 + i);
+    __m256 vec2 = _mm256_loadu_ps(m2 + i);
+    __m256 vec_r = _mm256_add_ps(vec1, vec2);
+    _mm256_storeu_ps(res + i, vec_r);
+  }
+  for (; i < length; i++) {
+    res[i] = m1[i] + m2[i];
+  }
 }
 
 static void matrix_multiply_avx(const float *m1, const float *m2,
