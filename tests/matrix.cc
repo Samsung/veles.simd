@@ -1,5 +1,5 @@
 /*! @file matrix.cc
- *  @brief New file description.
+ *  @brief Matrix unit tests
  *  @author Markovtsev Vadim <v.markovtsev@samsung.com>
  *  @version 1.0
  *
@@ -10,10 +10,106 @@
  *  Copyright 2013 Samsung R&D Institute Russia
  */
 
-
-#include <gtest/gtest.h>
-#include <simd/matrix.h>
 #include <simd/memory.h>
+#include <simd/matrix.h>
+#include "tests/matrix.h"
+
+void MatrixTest::SetUp() {
+  int w1, h1, w2, h2;
+  std::tie(w1, h1, w2, h2) = dimensions();
+  res_base_ = FloatPtr(mallocf(w2 * h1), std::free);
+  res_simd_ = FloatPtr(mallocf(w2 * h1), std::free);
+  if(transposed()) {
+    std::swap(w2, h2);
+  }
+  m1_ = FloatPtr(mallocf(w1 * h1), std::free);
+  m2_ = FloatPtr(mallocf(w2 * h2), std::free);
+  for (int i = 0; i < h1; i++) {
+    for (int j = 0; j < w1; j++) {
+      m1_.get()[i * w1 + j] = - j % 17 + i % 6;
+    }
+  }
+  for (int i = 0; i < h2; i++) {
+    for (int j = 0; j < w2; j++) {
+      m2_.get()[i * w2 + j] = j % 15 - i % 5;
+    }
+  }
+}
+
+void MatrixTest::CallFunction(int simd, float* result) {
+  int w1, h1, w2, h2;
+  std::tie(w1, h1, w2, h2) = dimensions();
+  if (transposed()) {
+    std::swap(w2, h2);
+  }
+  std::get<0>(std::get<1>(GetParam()))(
+      simd, m1_.get(), m2_.get(), w1, h1, w2, h2, result);
+}
+
+void MatrixTest::CompareResults() {
+  int h1, w2;
+  std::tie(std::ignore, h1, w2, std::ignore) = dimensions();
+  for (int i = 0; i < h1; i++) {
+    for (int j = 0; j < w2; j++) {
+      ASSERT_NEAR(res_base_.get()[i * w2 + j],
+                  res_simd_.get()[i * w2 + j], 0.1) << i << " " << j;
+    }
+  }
+}
+
+/** @brief Wrapper to instantiate parameterized test with matrix_add function
+ *  using common signature
+ */
+void matrix_add_wrapper(int simd, const float *m1, const float *m2,
+                        size_t w, size_t h, size_t, size_t,
+                        float *res) {
+  matrix_add(simd, m1, m2, w, h, res);
+}
+
+
+TEST_P(MatrixTest, SIMD) {
+  CallFunction(0, res_base_.get());
+  CallFunction(1, res_simd_.get());
+  CompareResults();
+}
+
+INSTANTIATE_TEST_CASE_P(
+    Common, MatrixTest,
+    ::testing::Combine(
+        ::testing::Values(
+            std::make_tuple(1, 1, 1, 1),
+            std::make_tuple(3, 3, 3, 3),
+            std::make_tuple(99, 99, 99, 99)
+        ),
+        ::testing::Values(
+            std::make_tuple(matrix_add_wrapper, false),
+            std::make_tuple(matrix_multiply, false),
+            std::make_tuple(matrix_multiply_transposed, true)
+        )
+    ));
+
+INSTANTIATE_TEST_CASE_P(
+    Add, MatrixTest,
+    ::testing::Values<MatrixTest::ParamType>(
+      std::make_tuple(
+          std::make_tuple(125, 299, 125, 299),
+          std::make_tuple(matrix_add_wrapper, false)
+      )
+    ));
+
+INSTANTIATE_TEST_CASE_P(
+    Multiply, MatrixTest,
+    ::testing::Combine(
+        ::testing::Values(
+            std::make_tuple(128, 300, 1000, 128),
+            std::make_tuple(125, 299, 999, 125)
+        ),
+        ::testing::Values(
+            std::make_tuple(matrix_multiply, false),
+            std::make_tuple(matrix_multiply_transposed, true)
+        )
+    ));
+
 
 TEST(Add, Validate) {
   float m1[6] = { 1, 2, 3,
@@ -44,68 +140,6 @@ TEST(Multiply, Validate) {
   }
 }
 
-TEST(Multiply, SIMD) {
-  float *m1 = mallocf(128 * 300);
-  for (int i = 0; i < 300; i++) {
-    for (int j = 0; j < 128; j++) {
-      m1[i * 128 + j] = -j % 17 + i % 6;
-    }
-  }
-  float *m2 = mallocf(1000 * 128);
-  for (int i = 0; i < 128; i++) {
-    for (int j = 0; j < 1000; j++) {
-      m2[i * 1000 + j] = j % 15 - i % 5;
-    }
-  }
-
-  float *res_base = mallocf(1000 * 300);
-  float *res_simd = mallocf(1000 * 300);
-  matrix_multiply(0, m1, m2, 128, 300, 1000, 128, res_base);
-  matrix_multiply(1, m1, m2, 128, 300, 1000, 128, res_simd);
-
-  for (int i = 0; i < 300; i++) {
-    for (int j = 0; j < 1000; j++) {
-      ASSERT_NEAR(res_base[i * 1000 + j], res_simd[i * 1000 + j], 0.1);
-    }
-  }
-
-  free(m1);
-  free(m2);
-  free(res_base);
-  free(res_simd);
-}
-
-TEST(Multiply, SIMDUglyLength) {
-  float *m1 = mallocf(125 * 299);
-  for (int i = 0; i < 299; i++) {
-    for (int j = 0; j < 125; j++) {
-      m1[i * 125 + j] = -j % 17 + i % 6;
-    }
-  }
-  float *m2 = mallocf(999 * 125);
-  for (int i = 0; i < 125; i++) {
-    for (int j = 0; j < 999; j++) {
-      m2[i * 999 + j] = j % 15 - i % 5;
-    }
-  }
-
-  float *res_base = mallocf(999 * 299);
-  float *res_simd = mallocf(999 * 299);
-  matrix_multiply(0, m1, m2, 125, 299, 999, 125, res_base);
-  matrix_multiply(1, m1, m2, 125, 299, 999, 125, res_simd);
-
-  for (int i = 0; i < 299; i++) {
-    for (int j = 0; j < 999; j++) {
-      ASSERT_NEAR(res_base[i * 999 + j], res_simd[i * 999 + j], 0.1);
-    }
-  }
-
-  free(m1);
-  free(m2);
-  free(res_base);
-  free(res_simd);
-}
-
 TEST(MultiplyTransposed, Validate) {
   float m1[6] = { 1, 2, 3,
                  -2, 0, 4 };
@@ -122,67 +156,6 @@ TEST(MultiplyTransposed, Validate) {
   }
 }
 
-TEST(MultiplyTransposed, SIMD) {
-  float *m1 = mallocf(128 * 300);
-  for (int i = 0; i < 300; i++) {
-    for (int j = 0; j < 128; j++) {
-      m1[i * 128 + j] = -j % 17 + i % 6;
-    }
-  }
-  float *m2 = mallocf(128 * 1000);
-  for (int i = 0; i < 1000; i++) {
-    for (int j = 0; j < 128; j++) {
-      m2[i * 128 + j] = j % 15 - i % 5;
-    }
-  }
-
-  float *res_base = mallocf(1000 * 300);
-  float *res_simd = mallocf(1000 * 300);
-  matrix_multiply_transposed(0, m1, m2, 128, 300, 128, 1000, res_base);
-  matrix_multiply_transposed(1, m1, m2, 128, 300, 128, 1000, res_simd);
-
-  for (int i = 0; i < 300; i++) {
-    for (int j = 0; j < 1000; j++) {
-      ASSERT_NEAR(res_base[i * 1000 + j], res_simd[i * 1000 + j], 0.1);
-    }
-  }
-
-  free(m1);
-  free(m2);
-  free(res_base);
-  free(res_simd);
-}
-
-TEST(MultiplyTransposed, SIMDUglyLength) {
-  float *m1 = mallocf(125 * 299);
-  for (int i = 0; i < 299; i++) {
-    for (int j = 0; j < 125; j++) {
-      m1[i * 125 + j] = -j % 17 + i % 6;
-    }
-  }
-  float *m2 = mallocf(125 * 999);
-  for (int i = 0; i < 999; i++) {
-    for (int j = 0; j < 125; j++) {
-      m2[i * 125 + j] = j % 15 - i % 5;
-    }
-  }
-
-  float *res_base = mallocf(999 * 299);
-  float *res_simd = mallocf(999 * 299);
-  matrix_multiply_transposed(0, m1, m2, 125, 299, 125, 999, res_base);
-  matrix_multiply_transposed(1, m1, m2, 125, 299, 125, 999, res_simd);
-
-  for (int i = 0; i < 299; i++) {
-    for (int j = 0; j < 999; j++) {
-      ASSERT_NEAR(res_base[i * 999 + j], res_simd[i * 999 + j], 0.1);
-    }
-  }
-
-  free(m1);
-  free(m2);
-  free(res_base);
-  free(res_simd);
-}
 
 #define TEST_NAME matrix_multiply
 #define ITER_COUNT 10
