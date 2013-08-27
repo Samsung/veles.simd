@@ -66,7 +66,7 @@ static void matrix_add_neon(const float *m1, const float *m2,
     float32x4_t vec1 = vld1q_f32(m1 + i);
     float32x4_t vec2 = vld1q_f32(m2 + i);
     float32x4_t vec_r = vaddq_f32(vec1, vec2);
-    vstq_f32(vec_r, res + i);
+    vst1q_f32(vec_r, res + i);
   }
   for (; i < length; i++) {
     res[i] = m1[i] + m2[i];
