@@ -84,7 +84,7 @@ void memsetf(float *ptr, size_t length, float value) {
   }
 #elif defined(__ARM_NEON__)
   const float32x4_t fillvec = vdupq_n_f32(value);
-  for (size_t i = 0; i < length - 3; i += 4) {
+  for (int i = 0; i < (int)length - 3; i += 4) {
     vst1q_f32(ptr + i, fillvec);
   }
   for (size_t i = (length & ~0x3); i < length; i++) {
@@ -119,7 +119,7 @@ float *zeropaddingex(const float *ptr, size_t length, size_t *newLength,
 float *rmemcpyf(float *__restrict dest,
                 const float *__restrict src, size_t length) {
 #ifdef __AVX__
-  for (size_t i = 0; i < length - 7; i += 8) {
+  for (int i = 0; i < (int)length - 7; i += 8) {
     __m256 vec = _mm256_loadu_ps(src + i);
     vec = _mm256_permute2f128_ps(vec, vec, 1);
     vec = _mm256_permute_ps(vec, 0x1B);
@@ -130,7 +130,7 @@ float *rmemcpyf(float *__restrict dest,
     dest[length - i - 1] = src[i];
   }
 #elif defined(__ARM_NEON__)
-  for (size_t i = 0; i < length - 3; i += 4) {
+  for (int i = 0; i < (int)length - 3; i += 4) {
     float32x4_t vec = vld1q_f32(src + i);
     vec = vrev64q_f32(vec);
     vec = vcombine_f32(vget_high_f32(vec), vget_low_f32(vec));
