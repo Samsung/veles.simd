@@ -1,6 +1,6 @@
 ##  This file is a part of SEAPT, Samsung Extended Autotools Project Template
 
-##  Copyright (c) 2012,2013 Samsung R&D Institute Russia
+##  Copyright 2012,2013 Samsung R&D Institute Russia
 ##  All rights reserved.
 ##
 ##  Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,8 @@ lib_gtest_la_SOURCES = src/gtest-all.cc
 
 # Compiler options. Here we are adding the include directory
 # to be searched for headers included in the source code.
-lib_gtest_la_CPPFLAGS = -I$(top_srcdir)/tests/google
+lib_gtest_la_CXXFLAGS = -I$(top_srcdir)/tests/google \
+	-Wno-missing-field-initializers -Wno-old-style-cast
 
 .PHONY: tests
 

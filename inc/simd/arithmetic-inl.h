@@ -26,6 +26,9 @@
 #include <stdint.h>
 #include <simd/memory.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
 INLINE NOTNULL(1, 3) void int16_to_float_na(const int16_t *data,
                                             size_t length, float *res) {
   for (size_t i = 0; i < length; i++) {
@@ -896,5 +899,7 @@ INLINE int next_highest_power_of_2(int value) {
   value |= value >> 16;
   return ++value;
 }
+
+#pragma GCC diagnostic pop
 
 #endif  // INC_SIMD_ARITHMETIC_INL_H_

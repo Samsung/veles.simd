@@ -30,7 +30,7 @@ DISTCHECK_CONFIGURE_FLAGS = --disable-doxygen
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = @PACKAGE_NAME@.pc
 
-.PHONY : tests
+.PHONY: tests
 
 export TESTLOG ?= tests.log
 
