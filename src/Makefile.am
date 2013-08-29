@@ -35,7 +35,7 @@ libSimd_la_SOURCES = avx_extra.c memory.c convolute.c correlate.c \
 daubechies.c wavelet.c coiflets.c symlets.c matrix.c
 
 # Used libraries
-libSimd_la_CFLAGS = @FFTF_CFLAGS@
+libSimd_la_CFLAGS = $(AM_CFLAGS) @FFTF_CFLAGS@
 
 # Used libraries
 libSimd_la_LIBADD = @FFTF_LIBS@
