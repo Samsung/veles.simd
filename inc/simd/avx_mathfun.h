@@ -32,6 +32,9 @@
 #ifndef INC_SIMD_AVX_MATHFUN_H_
 #define INC_SIMD_AVX_MATHFUN_H_
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
 #include <immintrin.h>
 
 /* yes I know, the top of this file is quite ugly */
@@ -123,7 +126,7 @@ static inline v8si _mm256_##fn(v8si x, int a) \
   return(ret); \
 }
 
-#warning "Using SSE2 to perform AVX2 bitshift ops"
+#pragma message "Warning: using SSE2 to perform AVX2 bitshift ops"
 AVX2_BITOP_USING_SSE2(slli_epi32)
 AVX2_BITOP_USING_SSE2(srli_epi32)
 
@@ -142,7 +145,7 @@ static inline v8si _mm256_##fn(v8si x, v8si y) \
   return(ret); \
 }
 
-#warning "Using SSE2 to perform AVX2 integer ops"
+#pragma message "Warning: using SSE2 to perform AVX2 integer ops"
 AVX2_INTOP_USING_SSE2(and_si128)
 AVX2_INTOP_USING_SSE2(andnot_si128)
 AVX2_INTOP_USING_SSE2(cmpeq_epi32)
@@ -720,4 +723,7 @@ inline v8sf pow256_ps(v8sf y, v8sf x) {
   v8sf ret = exp256_ps(expvec);
   return ret;
 }
+
+#pragma GCC diagnostic pop
+
 #endif // INC_SIMD_AVX_MATHFUN_H_

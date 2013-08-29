@@ -28,6 +28,9 @@
 #ifndef INC_SIMD_NEON_MATHFUN_H_
 #define INC_SIMD_NEON_MATHFUN_H_
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
 #include <arm_neon.h>
 
 typedef float32x4_t v4sf;  // vector of 4 float
@@ -327,4 +330,7 @@ inline v4sf sqrt_ps(v4sf val) {
   est = vmulq_f32(est, val);
   return est;
 }
+
+#pragma GCC diagnostic pop
+
 #endif  // INC_SIMD_NEON_MATHFUN_H_
