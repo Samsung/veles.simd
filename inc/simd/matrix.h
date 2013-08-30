@@ -20,6 +20,10 @@
 extern "C" {
 #endif
 
+#if __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 /// @brief Sums two matrices.
 /// @param simd Value which indicates whether to use SIMD acceleration or not.
 /// @param m1 The first matrix
@@ -61,6 +65,10 @@ void matrix_multiply(int simd, const float *m1, const float *m2,
 void matrix_multiply_transposed(int simd, const float *m1, const float *m2,
                                 size_t w1, size_t h1, size_t w2, size_t h2,
                                 float *res) NOTNULL(2,3,8);
+
+#if __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #ifdef __cplusplus
 }

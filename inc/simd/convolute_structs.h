@@ -15,6 +15,10 @@
 
 #include <stddef.h>
 
+#if __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 struct ConvoluteOverlapSaveHandle {
   void *fft_plan;
   void *fft_inverse_plan;
@@ -51,5 +55,9 @@ struct ConvoluteHandle {
     struct ConvoluteOverlapSaveHandle os;
   } handle;
 };
+
+#if __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #endif  // INC_SIMD_CONVOLUTE_STRUCTS_H_
