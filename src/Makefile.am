@@ -40,4 +40,7 @@ libSimd_la_CFLAGS = $(AM_CFLAGS) @FFTF_CFLAGS@
 # Used libraries
 libSimd_la_LIBADD = @FFTF_LIBS@
 
+libSimd_la_LDFLAGS = $(AM_LDFLAGS) \
+	-version-info $(INTERFACE_VERSION):$(REVISION_NUMBER):$(AGE_NUMBER)
+
 PARALLEL_SUBDIRS =
