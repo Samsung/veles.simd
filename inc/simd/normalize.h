@@ -19,7 +19,8 @@
 extern "C" {
 #endif
 
-/// @brief Performs the plane normalization [0, 255] -> [-1, 1].
+/// @brief Performs the plane normalization [min, max] -> [-1, 1]. Minimum
+/// and maximum is determined from the array.
 /// @param simd Value indicating whether to use available SIMD acceleration.
 /// @param src The source byte array, stored in row-major format.
 /// @param src_stride The stride (the actual width) of the plane.
@@ -29,6 +30,31 @@ extern "C" {
 /// @param dst_stride The stride of dst.
 void normalize2D(int simd, const uint8_t* src, int src_stride,
                  int width, int height, float* dst, int dst_stride);
+
+/// @brief Finds the minimum and the maximum value in the specified array.
+/// @param simd Value indicating whether to use available SIMD acceleration.
+/// @param src The source byte array, stored in row-major format.
+/// @param src_stride The stride (the actual width) of the plane.
+/// @param width The width of the plane.
+/// @param height The height of the plane.
+/// @param min The pointer to the resulting minimum.
+/// @param max The pointer to the resulting maximum.
+void minmax2D(int simd, const uint8_t* src, int src_stride,
+              int width, int height, uint8_t* min, uint8_t* max);
+
+/// @brief Performs the plane normalization [min, max] -> [-1, 1].
+/// @param simd Value indicating whether to use available SIMD acceleration.
+/// @param min The precalculated minimum value.
+/// @param max The precalculated maximum value.
+/// @param src The source byte array, stored in row-major format.
+/// @param src_stride The stride (the actual width) of the plane.
+/// @param width The width of the plane.
+/// @param height The height of the plane.
+/// @param dst The resulting floating point array.
+/// @param dst_stride The stride of dst.
+void normalize2D_minmax(int simd, uint8_t min, uint8_t max,
+                        const uint8_t* src, int src_stride,
+                        int width, int height, float* dst, int dst_stride);
 
 #ifdef __cplusplus
 }  // extern "C"

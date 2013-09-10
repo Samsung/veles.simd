@@ -21,50 +21,16 @@
 
 #ifdef __ARM_NEON__
 
-static void normalize2D_neon(const uint8_t* src, int src_stride,
-                             int width, int height,
-                             float* dst, int dst_stride) {
-  // Step 1 - get the maximum and minimum
-  uint8_t min = src[0], max = src[0];
-  uint8x16_t min_vec = vdupq_n_u8(min), max_vec = vdupq_n_u8(max);
-  for (int y = 0; y < height; y++) {
-    for (int x = 0; x < width - 15; x += 16) {
-      uint8x16_t vec = vld1q_u8(src + y * src_stride + x);
-      min_vec = vminq_u8(vec, min_vec);
-      max_vec = vmaxq_u8(vec, max_vec);
-    }
-    for (int x = width & ~0xF; x < width; x++) {
-      float val = src[y * src_stride + x];
-      if (val < min) {
-        min = val;
-      } else if (val > max) {
-        max = val;
-      }
-    }
-  }
-  // Gather the results
-  uint8_t min_arr[16] __attribute__((aligned(64))),
-      max_arr[16] __attribute__((aligned(64)));
-  vst1q_u8(min_arr, min_vec);
-  vst1q_u8(max_arr, max_vec);
-  for (int i = 0; i < 16; i++) {
-    float val = min_arr[i];
-    if (val < min) {
-      min = val;
-    }
-    val = max_arr[i];
-    if (val > max) {
-      max = val;
-    }
-  }
-
-  // Step 2 - perform the normalization
+static void normalize2D_minmax_neon(uint8_t min, uint8_t max,
+                                    const uint8_t* src, int src_stride,
+                                    int width, int height,
+                                    float* dst, int dst_stride) {
   if (max == min) {
     memsetf(dst, width * height, 0);
     return;
   }
+  const uint8x16_t min_vec = vdupq_n_u8(min);
   float diff = (max - min) / 2.f;
-  min_vec = vdupq_n_u8(min);
   const float32x4_t diff_vec = vdupq_n_f32(1.f / diff);
   const float32x4_t sub_vec = vdupq_n_f32(1.f);
   for (int y = 0; y < height; y++) {
@@ -117,22 +83,16 @@ static void normalize2D_neon(const uint8_t* src, int src_stride,
   }
 }
 
-#endif
-
-
-#ifdef __SSE2__
-
-static void normalize2D_sse(const uint8_t* src, int src_stride,
-                            int width, int height,
-                            float* dst, int dst_stride) {
-  // Step 1 - get the maximum and minimum
+static void minmax2D_neon(const uint8_t* src, int src_stride,
+                          int width, int height,
+                          uint8_t* min_ptr, uint8_t* max_ptr) {
   uint8_t min = src[0], max = src[0];
-  __m128i min_vec = _mm_set1_epi8(min), max_vec = _mm_set1_epi8(max);
+  uint8x16_t min_vec = vdupq_n_u8(min), max_vec = vdupq_n_u8(max);
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width - 15; x += 16) {
-      __m128i vec = _mm_loadu_si128((const __m128i*)(src + y * src_stride + x));
-      min_vec = _mm_min_epu8(vec, min_vec);
-      max_vec = _mm_max_epu8(vec, max_vec);
+      uint8x16_t vec = vld1q_u8(src + y * src_stride + x);
+      min_vec = vminq_u8(vec, min_vec);
+      max_vec = vmaxq_u8(vec, max_vec);
     }
     for (int x = width & ~0xF; x < width; x++) {
       float val = src[y * src_stride + x];
@@ -146,8 +106,8 @@ static void normalize2D_sse(const uint8_t* src, int src_stride,
   // Gather the results
   uint8_t min_arr[16] __attribute__((aligned(64))),
       max_arr[16] __attribute__((aligned(64)));
-  _mm_store_si128((__m128i*)min_arr, min_vec);
-  _mm_store_si128((__m128i*)max_arr, max_vec);
+  vst1q_u8(min_arr, min_vec);
+  vst1q_u8(max_arr, max_vec);
   for (int i = 0; i < 16; i++) {
     float val = min_arr[i];
     if (val < min) {
@@ -159,13 +119,25 @@ static void normalize2D_sse(const uint8_t* src, int src_stride,
     }
   }
 
-  // Step 2 - perform the normalization
+  *min_ptr = min;
+  *max_ptr = max;
+}
+
+#endif
+
+
+#ifdef __SSE2__
+
+static void normalize2D_minmax_sse(uint8_t min, uint8_t max,
+                                   const uint8_t* src, int src_stride,
+                                   int width, int height,
+                                   float* dst, int dst_stride) {
   if (max == min) {
     memsetf(dst, width * height, 0);
     return;
   }
+  const __m128i min_vec = _mm_set1_epi8(min);
   float diff = (max - min) / 2.f;
-  min_vec = _mm_set1_epi8(min);
   const __m128 diff_vec = _mm_set1_ps(1.f / diff);
   const __m128 sub_vec = _mm_set1_ps(1.f);
   for (int y = 0; y < height; y++) {
@@ -210,15 +182,18 @@ static void normalize2D_sse(const uint8_t* src, int src_stride,
   }
 }
 
-#endif
-
-static void normalize2D_novec(const uint8_t* src, int src_stride,
-                              int width, int height,
-                              float* dst, int dst_stride) {
-  // Step 1 - get the maximum and minimum
+static void minmax2D_sse(const uint8_t* src, int src_stride,
+                         int width, int height,
+                         uint8_t* min_ptr, uint8_t* max_ptr) {
   uint8_t min = src[0], max = src[0];
+  __m128i min_vec = _mm_set1_epi8(min), max_vec = _mm_set1_epi8(max);
   for (int y = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
+    for (int x = 0; x < width - 15; x += 16) {
+      __m128i vec = _mm_loadu_si128((const __m128i*)(src + y * src_stride + x));
+      min_vec = _mm_min_epu8(vec, min_vec);
+      max_vec = _mm_max_epu8(vec, max_vec);
+    }
+    for (int x = width & ~0xF; x < width; x++) {
       float val = src[y * src_stride + x];
       if (val < min) {
         min = val;
@@ -227,8 +202,32 @@ static void normalize2D_novec(const uint8_t* src, int src_stride,
       }
     }
   }
+  // Gather the results
+  uint8_t min_arr[16] __attribute__((aligned(64))),
+      max_arr[16] __attribute__((aligned(64)));
+  _mm_store_si128((__m128i*)min_arr, min_vec);
+  _mm_store_si128((__m128i*)max_arr, max_vec);
+  for (int i = 0; i < 16; i++) {
+    float val = min_arr[i];
+    if (val < min) {
+      min = val;
+    }
+    val = max_arr[i];
+    if (val > max) {
+      max = val;
+    }
+  }
 
-  // Step 2 - perform the normalization
+  *min_ptr = min;
+  *max_ptr = max;
+}
+
+#endif
+
+static void normalize2D_minmax_novec(uint8_t min, uint8_t max,
+                                     const uint8_t* src, int src_stride,
+                                     int width, int height,
+                                     float* dst, int dst_stride) {
   if (max == min) {
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
@@ -245,24 +244,75 @@ static void normalize2D_novec(const uint8_t* src, int src_stride,
   }
 }
 
+static void minmax2D_novec(const uint8_t* src, int src_stride,
+                           int width, int height,
+                           uint8_t* min_ptr, uint8_t* max_ptr) {
+  uint8_t min = src[0], max = src[0];
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      float val = src[y * src_stride + x];
+      if (val < min) {
+        min = val;
+      } else if (val > max) {
+        max = val;
+      }
+    }
+  }
+  *min_ptr = min;
+  *max_ptr = max;
+}
+
 void normalize2D(int simd, const uint8_t* src, int src_stride,
                  int width, int height, float* dst, int dst_stride) {
+  uint8_t min, max;
+  minmax2D(simd, src, src_stride, width, height, &min, &max);
+  normalize2D_minmax(simd, min, max, src, src_stride, width, height,
+                     dst, dst_stride);
+}
+
+void minmax2D(int simd, const uint8_t* src, int src_stride,
+              int width, int height, uint8_t* min, uint8_t* max) {
+  assert(src);
+  assert(width > 0);
+  assert(height > 0);
+  assert(src_stride >= width);
+  if (simd) {
+#ifdef __ARM_NEON__
+    minmax2D_neon(src, src_stride, width, height, min, max);
+  } else {
+#elif defined(__SSE2__)
+    minmax2D_sse(src, src_stride, width, height, min, max);
+  } else {
+#else
+  } {
+#endif
+    minmax2D_novec(src, src_stride, width, height, min, max);
+  }
+}
+
+void normalize2D_minmax(int simd, uint8_t min, uint8_t max,
+                        const uint8_t* src, int src_stride,
+                        int width, int height, float* dst, int dst_stride) {
   assert(src);
   assert(dst);
   assert(width > 0);
   assert(height > 0);
   assert(src_stride >= width);
   assert(dst_stride >= width);
+  assert(min <= max);
   if (simd) {
 #ifdef __ARM_NEON__
-    normalize2D_neon(src, src_stride, width, height, dst, dst_stride);
+    normalize2D_minmax_neon(min, max, src, src_stride, width, height,
+                            dst, dst_stride);
   } else {
 #elif defined(__SSE2__)
-    normalize2D_sse(src, src_stride, width, height, dst, dst_stride);
+    normalize2D_minmax_sse(min, max, src, src_stride, width, height,
+                           dst, dst_stride);
   } else {
 #else
   } {
 #endif
-    normalize2D_novec(src, src_stride, width, height, dst, dst_stride);
+    normalize2D_minmax_novec(min, max, src, src_stride, width, height,
+                             dst, dst_stride);
   }
 }
