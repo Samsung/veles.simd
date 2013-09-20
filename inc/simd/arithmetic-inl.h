@@ -114,7 +114,7 @@ INLINE NOTNULL(1, 4) void real_multiply_scalar_na(const float *array,
   }
 }
 
-INLINE NOTNULL(1) float sum_na(const float *input, size_t length) {
+INLINE NOTNULL(1) float sum_elements_na(const float *input, size_t length) {
   float res = 0.f;
   for (int j = 0; j < (int)length; j++) {
     res += input[j];
@@ -623,7 +623,7 @@ INLINE NOTNULL(1, 4) void real_multiply_scalar(const float *array,
   }
 }
 
-INLINE NOTNULL(1) float sum(const float *input, size_t length) {
+INLINE NOTNULL(1) float sum_elements(const float *input, size_t length) {
   assert(align_complement_f32(input) == 0);
   int ilength = (int)length;
   __m256 accum = _mm256_setzero_ps();
@@ -851,7 +851,7 @@ INLINE NOTNULL(1, 4) void real_multiply_scalar(const float *array,
   }
 }
 
-INLINE NOTNULL(1) float sum(const float *input, size_t length) {
+INLINE NOTNULL(1) float sum_elements(const float *input, size_t length) {
   int ilength = (int)length;
   float32x4_t accum = vdupq_n_f32(0.f);
   for (int j = 0; j < ilength - 7; j += 8) {
@@ -882,7 +882,7 @@ INLINE NOTNULL(1) float sum(const float *input, size_t length) {
 #define complex_multiply_conjugate complex_multiply_conjugate_na
 #define complex_conjugate complex_conjugate_na
 #define real_multiply_scalar real_multiply_scalar_na
-#define sum sum_na
+#define sum_elements sum_elements_na
 
 #endif
 
