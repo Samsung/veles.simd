@@ -24,7 +24,7 @@
 ##  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 SUBDIRS=inc src $(TESTS_DIR) $(DOCS_DIR)
-DIST_SUBDIRS=inc src tests docs
+DIST_SUBDIRS=inc src $(TESTS_DIR) $(DOCS_DIR)
 DISTCHECK_CONFIGURE_FLAGS = --disable-doxygen
 
 pkgconfigdir = $(libdir)/pkgconfig
