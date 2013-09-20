@@ -14,10 +14,9 @@
 #define INC_SIMD_CONVOLUTE_STRUCTS_H_
 
 #include <stddef.h>
+#include <simd/common.h>
 
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+SIMD_API_BEGIN
 
 struct ConvoluteOverlapSaveHandle {
   void *fft_plan;
@@ -56,8 +55,6 @@ struct ConvoluteHandle {
   } handle;
 };
 
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+SIMD_API_END
 
 #endif  // INC_SIMD_CONVOLUTE_STRUCTS_H_

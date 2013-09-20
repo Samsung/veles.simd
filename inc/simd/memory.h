@@ -14,15 +14,10 @@
 #define INC_SIMD_MEMORY_H_
 
 #include <string.h>
+#include <simd/common.h>
 #include <simd/attributes.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+SIMD_API_BEGIN
 
 #ifdef __AVX__
 #include <stdint.h>  // NOLINT(build/include_order)
@@ -147,12 +142,6 @@ float *rmemcpyf(float *__restrict dest,
 float *crmemcpyf(float *__restrict dest,
                  const float *__restrict src, size_t length) NOTNULL(1, 2);
 
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+SIMD_API_END
 
 #endif  // INC_SIMD_MEMORY_H_

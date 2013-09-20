@@ -10,19 +10,14 @@
  *  Copyright 2013 Samsung R&D Institute Russia
  */
 
-#include <stddef.h>
-#include <simd/attributes.h>
-
 #ifndef INC_SIMD_MATRIX_H_
 #define INC_SIMD_MATRIX_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stddef.h>
+#include <simd/common.h>
+#include <simd/attributes.h>
 
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+SIMD_API_BEGIN
 
 /// @brief Sums two matrices.
 /// @param simd Value which indicates whether to use SIMD acceleration or not.
@@ -66,12 +61,6 @@ void matrix_multiply_transposed(int simd, const float *m1, const float *m2,
                                 size_t w1, size_t h1, size_t w2, size_t h2,
                                 float *res) NOTNULL(2,3,8);
 
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+SIMD_API_END
 
 #endif  // INC_SIMD_MATRIX_H_

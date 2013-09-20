@@ -13,9 +13,9 @@
 #ifndef INC_SIMD_WAVELET_TYPES_H_
 #define INC_SIMD_WAVELET_TYPES_H_
 
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+#include <simd/common.h>
+
+SIMD_API_BEGIN
 
 typedef enum {
   WAVELET_TYPE_DAUBECHIES,
@@ -23,9 +23,7 @@ typedef enum {
   WAVELET_TYPE_SYMLET
 } WaveletType;
 
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+SIMD_API_END
 
 
 #endif  // INC_SIMD_WAVELET_TYPES_H_
