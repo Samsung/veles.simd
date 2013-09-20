@@ -14,16 +14,11 @@
 #define INC_SIMD_CORRELATE_H_
 
 #include <stddef.h>
+#include <simd/common.h>
 #include <simd/attributes.h>
 #include <simd/convolute_structs.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+SIMD_API_BEGIN
 
 typedef struct ConvoluteFFTHandle CrossCorrelateFFTHandle;
 
@@ -120,12 +115,6 @@ void cross_correlate(CrossCorrelateHandle handle,
 /// cross_correlate_overlap_initialize().
 void cross_correlate_finalize(CrossCorrelateHandle handle);
 
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+SIMD_API_END
 
 #endif  // INC_SIMD_CORRELATE_H_

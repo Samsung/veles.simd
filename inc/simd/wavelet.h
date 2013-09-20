@@ -14,16 +14,11 @@
 #define INC_SIMD_WAVELET_H_
 
 #include <stddef.h>
+#include <simd/common.h>
 #include <simd/attributes.h>
 #include <simd/wavelet_types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+SIMD_API_BEGIN
 
 /// @brief Checks the specified wavelet order for validity.
 /// @param type The wavelet type.
@@ -94,12 +89,6 @@ void wavelet_apply_na(WaveletType type, int order,
                       float *__restrict desthi, float *__restrict destlo)
     NOTNULL(3, 5, 6);
 
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+SIMD_API_END
 
 #endif  // INC_SIMD_WAVELET_H_

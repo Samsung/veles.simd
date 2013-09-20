@@ -13,13 +13,9 @@
 #ifndef INC_SIMD_AVX_EXTRA_H_
 #define INC_SIMD_AVX_EXTRA_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <simd/common.h>
 
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+SIMD_API_BEGIN
 
 #ifdef __AVX__
 
@@ -41,12 +37,6 @@ INLINE unsigned long long __xgetbv() {
 
 #endif  // __AVX__
 
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+SIMD_API_END
 
 #endif  // INC_SIMD_AVX_EXTRA_H_

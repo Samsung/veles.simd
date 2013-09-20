@@ -14,10 +14,9 @@
 #define INC_SIMD_NORMALIZE_H_
 
 #include <stdint.h>
+#include <simd/common.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+SIMD_API_BEGIN
 
 /// @brief Performs the plane normalization [min, max] -> [-1, 1]. Minimum
 /// and maximum is determined from the array.
@@ -56,8 +55,6 @@ void normalize2D_minmax(int simd, uint8_t min, uint8_t max,
                         const uint8_t* src, int src_stride,
                         int width, int height, float* dst, int dst_stride);
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
+SIMD_API_END
 
 #endif  // INC_SIMD_NORMALIZE_H_

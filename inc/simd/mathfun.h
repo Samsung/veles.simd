@@ -10,20 +10,15 @@
  *  Copyright 2013 Samsung R&D Institute Russia
  */
 
-#include <math.h>
-#include <stddef.h>
-#include <simd/attributes.h>
-
 #ifndef INC_SIMD_MATHFUN_H_
 #define INC_SIMD_MATHFUN_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <math.h>
+#include <stddef.h>
+#include <simd/common.h>
+#include <simd/attributes.h>
 
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+SIMD_API_BEGIN
 
 typedef float (*PsvStdFunc)(float);
 
@@ -191,12 +186,6 @@ INLINE NOTNULL(2, 4) void exp_psv(int simd, const float *src, size_t length,
 
 //////////////////////////
 
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+SIMD_API_END
 
 #endif  // INC_SIMD_MATHFUN_H_
