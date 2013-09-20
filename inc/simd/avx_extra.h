@@ -17,6 +17,10 @@
 extern "C" {
 #endif
 
+#if __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 #ifdef __AVX__
 
 #include <immintrin.h>
@@ -36,6 +40,10 @@ INLINE unsigned long long __xgetbv() {
 }
 
 #endif  // __AVX__
+
+#if __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #ifdef __cplusplus
 }
