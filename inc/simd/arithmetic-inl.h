@@ -122,6 +122,13 @@ INLINE NOTNULL(1) float sum_elements_na(const float *input, size_t length) {
   return res;
 }
 
+INLINE NOTNULL(1,4) void add_to_all_na(float *input, size_t length,
+                                       float value, float *output) {
+  for (int j = 0; j < (int)length; j++) {
+    output[j] = input[j] + value;
+  }
+}
+
 #ifdef __AVX__
 
 #include <immintrin.h>  // NOLINT(build/include_order)
@@ -623,6 +630,10 @@ INLINE NOTNULL(1, 4) void real_multiply_scalar(const float *array,
   }
 }
 
+/// @brief Sums all the elements of the array.
+/// @param input The array which will be summed.
+/// @param length The size of the array (in float-s, not in bytes).
+/// @return The sum of all the elements in the array.
 INLINE NOTNULL(1) float sum_elements(const float *input, size_t length) {
   assert(align_complement_f32(input) == 0);
   int ilength = (int)length;
@@ -640,10 +651,32 @@ INLINE NOTNULL(1) float sum_elements(const float *input, size_t length) {
 #else
   float res = accum[0] + accum[4];
 #endif
-  for (int j = ((ilength >> 4) << 4); j < ilength; j++) {
+  for (int j = (ilength & ~0xF); j < ilength; j++) {
     res += input[j];
   }
   return res;
+}
+
+/// @brief Adds the same value to all elements in the array.
+/// @param input The array to sum with the specified value.
+/// @param length The size of the arrays (in float-s, not in bytes).
+/// @param value The real number to add to all the elements in input.
+/// @param output The array to write the result to.
+INLINE NOTNULL(1,4) void add_to_all(float *input, size_t length,
+                                    float value, float *output) {
+  int ilength = (int)length;
+  const __m256 add_vec = _mm256_set1_ps(value);
+  for (int j = 0; j < ilength - 15; j += 16) {
+    __m256 vec1 = _mm256_load_ps(input + j);
+    __m256 vec2 = _mm256_load_ps(input + j + 8);
+    vec1 = _mm256_add_ps(add_vec, vec1);
+    vec2 = _mm256_add_ps(add_vec, vec2);
+    _mm256_store_ps(output + j, vec1);
+    _mm256_store_ps(output + j + 8, vec2);
+  }
+  for (int j = (ilength & ~0xF); j < ilength; j++) {
+    output[j] = input[j] + value;
+  }
 }
 
 #elif defined(__ARM_NEON__)
@@ -851,6 +884,10 @@ INLINE NOTNULL(1, 4) void real_multiply_scalar(const float *array,
   }
 }
 
+/// @brief Sums all the elements of the array.
+/// @param input The array which will be summed.
+/// @param length The size of the array (in float-s, not in bytes).
+/// @return The sum of all the elements in the array.
 INLINE NOTNULL(1) float sum_elements(const float *input, size_t length) {
   int ilength = (int)length;
   float32x4_t accum = vdupq_n_f32(0.f);
@@ -869,6 +906,28 @@ INLINE NOTNULL(1) float sum_elements(const float *input, size_t length) {
   return res;
 }
 
+/// @brief Adds the same value to all elements in the array.
+/// @param input The array to sum with the specified value.
+/// @param length The size of the arrays (in float-s, not in bytes).
+/// @param value The real number to add to all the elements in input.
+/// @param output The array to write the result to.
+INLINE NOTNULL(1,4) void add_to_all(float *input, size_t length,
+                                    float value, float *output) {
+  int ilength = (int)length;
+  const float32x4_t add_vec = vdupq_n_f32(value);
+  for (int j = 0; j < ilength - 7; j += 8) {
+    float32x4_t vec1 = vld1q_f32(input + j);
+    float32x4_t vec2 = vld1q_f32(input + j + 4);
+    vec1 = vaddq_f32(add_vec, vec1);
+    vec2 = vaddq_f32(add_vec, vec2);
+    vst1q_f32(output + j, vec1);
+    vst1q_f32(output + j + 8, vec2);
+  }
+  for (int j = (ilength & ~0x7); j < ilength; j++) {
+    output[j] = input[j] + value;
+  }
+}
+
 #else
 
 #define int16_to_float int16_to_float_na
@@ -883,6 +942,7 @@ INLINE NOTNULL(1) float sum_elements(const float *input, size_t length) {
 #define complex_conjugate complex_conjugate_na
 #define real_multiply_scalar real_multiply_scalar_na
 #define sum_elements sum_elements_na
+#define add_to_all add_to_all_na
 
 #endif
 
