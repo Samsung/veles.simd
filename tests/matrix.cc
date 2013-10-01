@@ -66,50 +66,18 @@ void matrix_add_wrapper(int simd, const float *m1, const float *m2,
   matrix_add(simd, m1, m2, w, h, res);
 }
 
-
-TEST_P(MatrixTest, SIMD) {
-  CallFunction(0, res_base_.get());
-  CallFunction(1, res_simd_.get());
-  CompareResults();
+void matrix_sub_wrapper(int simd, const float *m1, const float *m2,
+                        size_t w, size_t h, size_t, size_t,
+                        float *res) {
+  matrix_sub(simd, m1, m2, w, h, res);
 }
 
-INSTANTIATE_TEST_CASE_P(
-    Common, MatrixTest,
-    ::testing::Combine(
-        ::testing::Values(
-            std::make_tuple(1, 1, 1, 1),
-            std::make_tuple(3, 3, 3, 3),
-            std::make_tuple(99, 99, 99, 99)
-        ),
-        ::testing::Values(
-            std::make_tuple(matrix_add_wrapper, false),
-            std::make_tuple(matrix_multiply, false),
-            std::make_tuple(matrix_multiply_transposed, true)
-        )
-    ));
 
-INSTANTIATE_TEST_CASE_P(
-    Add, MatrixTest,
-    ::testing::Values<MatrixTest::ParamType>(
-      std::make_tuple(
-          std::make_tuple(125, 299, 125, 299),
-          std::make_tuple(matrix_add_wrapper, false)
-      )
-    ));
-
-INSTANTIATE_TEST_CASE_P(
-    Multiply, MatrixTest,
-    ::testing::Combine(
-        ::testing::Values(
-            std::make_tuple(128, 300, 1000, 128),
-            std::make_tuple(125, 299, 999, 125)
-        ),
-        ::testing::Values(
-            std::make_tuple(matrix_multiply, false),
-            std::make_tuple(matrix_multiply_transposed, true)
-        )
-    ));
-
+TEST_P(MatrixTest, SIMD) {
+  CallFunction(false, res_base_.get());
+  CallFunction(true, res_simd_.get());
+  CompareResults();
+}
 
 TEST(Add, Validate) {
   float m1[6] = { 1, 2, 3,
@@ -119,7 +87,21 @@ TEST(Add, Validate) {
   float res[6];
   float res_valid[6] = { 1, 3, 6,
                          3, -1, 6 };
-  matrix_add(0, m1, m2, 3, 2, res);
+  matrix_add(false, m1, m2, 3, 2, res);
+  for (int i = 0; i < 6; i++) {
+    ASSERT_NEAR(res[i], res_valid[i], 0.01);
+  }
+}
+
+TEST(Sub, Validate) {
+  float m1[6] = { 1, 2, 3,
+                 -2, 0, 4 };
+  float m2[6] = { 0, 1, 3,
+                  5, -1, 2 };
+  float res[6];
+  float res_valid[6] = { 1, 1, 0,
+                         -7, 1, 2 };
+  matrix_sub(false, m1, m2, 3, 2, res);
   for (int i = 0; i < 6; i++) {
     ASSERT_NEAR(res[i], res_valid[i], 0.01);
   }
@@ -134,7 +116,7 @@ TEST(Multiply, Validate) {
   float res[8];
   float res_valid[8] = { 1, -1, -5, 12,
                        -12, -2,-22, 12 };
-  matrix_multiply(0, m1, m2, 3, 2, 4, 3, res);
+  matrix_multiply(false, m1, m2, 3, 2, 4, 3, res);
   for (int i = 0; i < 8; i++) {
     ASSERT_NEAR(res[i], res_valid[i], 0.01);
   }
@@ -150,12 +132,58 @@ TEST(MultiplyTransposed, Validate) {
   float res[8];
   float res_valid[8] = { 1, -1, -5, 12,
                        -12, -2,-22, 12 };
-  matrix_multiply_transposed(0, m1, m2, 3, 2, 3, 4, res);
+  matrix_multiply_transposed(false, m1, m2, 3, 2, 3, 4, res);
   for (int i = 0; i < 8; i++) {
     ASSERT_NEAR(res[i], res_valid[i], 0.01);
   }
 }
 
+INSTANTIATE_TEST_CASE_P(
+    Common, MatrixTest,
+    ::testing::Combine(
+        ::testing::Values(
+            std::make_tuple(1, 1, 1, 1),
+            std::make_tuple(3, 3, 3, 3),
+            std::make_tuple(99, 99, 99, 99)
+        ),
+        ::testing::Values(
+            std::make_tuple(matrix_add_wrapper, false),
+            std::make_tuple(matrix_sub_wrapper, false),
+            std::make_tuple(matrix_multiply, false),
+            std::make_tuple(matrix_multiply_transposed, true)
+        )
+    ));
+
+INSTANTIATE_TEST_CASE_P(
+    Add, MatrixTest,
+    ::testing::Values<MatrixTest::ParamType>(
+      std::make_tuple(
+          std::make_tuple(125, 299, 125, 299),
+          std::make_tuple(matrix_add_wrapper, false)
+      )
+    ));
+
+INSTANTIATE_TEST_CASE_P(
+    Sub, MatrixTest,
+    ::testing::Values<MatrixTest::ParamType>(
+      std::make_tuple(
+          std::make_tuple(125, 299, 125, 299),
+          std::make_tuple(matrix_sub_wrapper, false)
+      )
+    ));
+
+INSTANTIATE_TEST_CASE_P(
+    Multiply, MatrixTest,
+    ::testing::Combine(
+        ::testing::Values(
+            std::make_tuple(128, 300, 1000, 128),
+            std::make_tuple(125, 299, 999, 125)
+        ),
+        ::testing::Values(
+            std::make_tuple(matrix_multiply, false),
+            std::make_tuple(matrix_multiply_transposed, true)
+        )
+    ));
 
 #define TEST_NAME matrix_multiply
 #define ITER_COUNT 10

@@ -28,6 +28,14 @@ static void matrix_add_novec(const float *m1, const float *m2,
   }
 }
 
+static void matrix_sub_novec(const float *m1, const float *m2,
+                      size_t w, size_t h, float *res) {
+  int size = (int)w * (int)h;
+  for (int i = 0; i < size; i++) {
+    res[i] = m1[i] - m2[i];
+  }
+}
+
 static void matrix_multiply_novec(const float *m1, const float *m2,
                                   size_t w1, size_t h1, size_t w2,
                                   size_t h2 UNUSED, float *res) {
@@ -66,6 +74,21 @@ static void matrix_add_neon(const float *m1, const float *m2,
     float32x4_t vec1 = vld1q_f32(m1 + i);
     float32x4_t vec2 = vld1q_f32(m2 + i);
     float32x4_t vec_r = vaddq_f32(vec1, vec2);
+    vst1q_f32(res + i, vec_r);
+  }
+  for (; i < length; i++) {
+    res[i] = m1[i] + m2[i];
+  }
+}
+
+static void matrix_sub_neon(const float *m1, const float *m2,
+                            size_t w, size_t h, float *res) {
+  int length = (int)w * (int)h;
+  int i = 0;
+  for (; i < length - 3; i += 4) {
+    float32x4_t vec1 = vld1q_f32(m1 + i);
+    float32x4_t vec2 = vld1q_f32(m2 + i);
+    float32x4_t vec_r = vsubq_f32(vec1, vec2);
     vst1q_f32(res + i, vec_r);
   }
   for (; i < length; i++) {
@@ -145,6 +168,21 @@ static void matrix_add_avx(const float *m1, const float *m2,
   }
 }
 
+static void matrix_sub_avx(const float *m1, const float *m2,
+                           size_t w, size_t h, float *res) {
+  int length = (int)w * (int)h;
+  int i = 0;
+  for (; i < length - 7; i += 8) {
+    __m256 vec1 = _mm256_loadu_ps(m1 + i);
+    __m256 vec2 = _mm256_loadu_ps(m2 + i);
+    __m256 vec_r = _mm256_sub_ps(vec1, vec2);
+    _mm256_storeu_ps(res + i, vec_r);
+  }
+  for (; i < length; i++) {
+    res[i] = m1[i] - m2[i];
+  }
+}
+
 static void matrix_multiply_avx(const float *m1, const float *m2,
                                 size_t w1, size_t h1, size_t w2,
                                 size_t h2 UNUSED, float *res) {
@@ -218,6 +256,27 @@ void matrix_add(int simd, const float *m1, const float *m2,
   } {
 #endif
     matrix_add_novec(m1, m2, w, h, res);
+  }
+}
+
+void matrix_sub(int simd, const float *m1, const float *m2,
+                size_t w, size_t h, float *res) {
+  assert(m1);
+  assert(m2);
+  assert(res);
+  assert(w > 0);
+  assert(h > 0);
+  if (simd) {
+#ifdef __ARM_NEON__
+    matrix_sub_neon(m1, m2, w, h, res);
+  } else {
+#elif defined(__AVX__)
+    matrix_sub_avx(m1, m2, w, h, res);
+  } else {
+#else
+  } {
+#endif
+    matrix_sub_novec(m1, m2, w, h, res);
   }
 }
 
