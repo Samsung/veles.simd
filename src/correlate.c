@@ -103,8 +103,8 @@ void cross_correlate_simd(int simd,
         sum += x[m] * h[n + m];
       }
     }
-   result[-n + hLength - 1] = sum;
- }
+    result[-n + hLength - 1] = sum;
+  }
 }
 
 CrossCorrelateHandle cross_correlate_initialize(size_t xLength,
