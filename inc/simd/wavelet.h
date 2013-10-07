@@ -20,9 +20,9 @@
 
 SIMD_API_BEGIN
 
-/// @brief Checks the specified wavelet order for validity.
+/// @brief Checks if the specified wavelet order is supported by the engine.
 /// @param type The wavelet type.
-/// @param order The order of the wavelet.
+/// @param order The order of the wavelet to check.
 /// @return 1 if order is valid, otherwise 0.
 int wavelet_validate_order(WaveletType type, int order);
 
@@ -33,6 +33,7 @@ int wavelet_validate_order(WaveletType type, int order);
 /// @param length The length of source in float-s.
 /// @return A newly allocated memory block which should be disposed with
 /// free() if AVX SIMD is activated; otherwise, src.
+/// @note It should be used with wavelet_apply() or wavelet_apply_na().
 float *wavelet_prepare_array(int order, const float *src, size_t length)
     NOTNULL(2)
 #ifdef __AVX__
@@ -48,24 +49,28 @@ float *wavelet_prepare_array(int order, const float *src, size_t length)
 /// (in float-s, not in bytes).
 /// @return A newly allocated memory block which should be disposed with
 /// free().
+/// @note It should be used with wavelet_apply() or wavelet_apply_na().
 float *wavelet_allocate_destination(int order, size_t sourceLength)
     MALLOC WARN_UNUSED_RESULT;
 
 /// @brief Splits src into four regions to reuse the allocated memory.
+/// @note It should be used with wavelet_apply() or wavelet_apply_na().
 void wavelet_recycle_source(int order, float *src, size_t length,
                             float **desthihi, float **desthilo,
                             float **destlohi, float **destlolo)
     NOTNULL(2, 4, 5, 6, 7);
 
-/// @brief Performs an atomic wavelet transform on series of real numbers.
+/// @brief Performs a single wavelet transform on series of real numbers.
 /// @param type The wavelet type.
 /// @param order The order of the wavelet to apply.
 /// For example, order = 6 means 6 coefficients.
 /// @param src An array of floating point numbers to transform.
 /// @param length The logical length of src (in float-s, not in bytes).
-/// @param desthi The high frequency part of result (highpass).
-/// @param destlo The low frequency part of result (lowpass).
-/// @details Daubechies wavelet of order 8 is used.
+/// @param desthi The high frequency part of result (highpass). It must be at
+/// least of size length/2.
+/// @param destlo The low frequency part of result (lowpass). It must be at
+/// least of size length/2.
+/// @details Daubechies wavelet of order 8 is used by default.
 /// @pre length must be greater than or equal to 8.
 /// @pre length must be even.
 void wavelet_apply(WaveletType type, int order,
@@ -73,20 +78,61 @@ void wavelet_apply(WaveletType type, int order,
                    float *__restrict desthi, float *__restrict destlo)
     NOTNULL(3, 5, 6);
 
-/// @brief Performs an atomic wavelet transform on series of real numbers.
+/// @brief Performs a single wavelet transform on series of real numbers.
 /// (no SIMD acceleration is used).
 /// @param type The wavelet type.
 /// @param order The order of the wavelet to apply.
 /// For example, order = 6 means 6 coefficients.
 /// @param src An array of floating point numbers to transform.
 /// @param length The logical length of src (in float-s, not in bytes).
-/// @param desthi The high frequency part of result (highpass).
-/// @param destlo The low frequency part of result (lowpass).
+/// @param desthi The high frequency part of result (highpass). It must be at
+/// least of size length/2.
+/// @param destlo The low frequency part of result (lowpass). It must be at
+/// least of size length/2.
 /// @pre length must be greater than or equal to (order * 2).
 /// @pre length must be even.
 void wavelet_apply_na(WaveletType type, int order,
                       const float *__restrict src, size_t length,
                       float *__restrict desthi, float *__restrict destlo)
+    NOTNULL(3, 5, 6);
+
+/// @brief Performs a single stationary (undecimated) wavelet transform
+/// on series of real numbers.
+/// @param type The wavelet type.
+/// @param order The order of the wavelet to apply.
+/// For example, order = 6 means 6 coefficients.
+/// @param src An array of floating point numbers to transform.
+/// @param length The logical length of src (in float-s, not in bytes).
+/// @param desthi The high frequency part of result (highpass). It must be at
+/// least of size length.
+/// @param destlo The low frequency part of result (lowpass). It must be at
+/// least of size length.
+/// @details Daubechies wavelet of order 8 is used by default.
+/// @pre length must be greater than or equal to 8.
+/// @pre length must be even.
+void stationary_wavelet_apply(WaveletType type, int order,
+                              const float *__restrict src, size_t length,
+                              float *__restrict desthi,
+                              float *__restrict destlo)
+    NOTNULL(3, 5, 6);
+
+/// @brief Performs a single stationary (undecimated) wavelet transform
+/// on series of real numbers (no SIMD acceleration is used).
+/// @param type The wavelet type.
+/// @param order The order of the wavelet to apply.
+/// For example, order = 6 means 6 coefficients.
+/// @param src An array of floating point numbers to transform.
+/// @param length The logical length of src (in float-s, not in bytes).
+/// @param desthi The high frequency part of result (highpass). It must be at
+/// least of size length.
+/// @param destlo The low frequency part of result (lowpass). It must be at
+/// least of size length.
+/// @pre length must be greater than or equal to (order * 2).
+/// @pre length must be even.
+void stationary_wavelet_apply_na(WaveletType type, int order,
+                                 const float *__restrict src, size_t length,
+                                 float *__restrict desthi,
+                                 float *__restrict destlo)
     NOTNULL(3, 5, 6);
 
 SIMD_API_END

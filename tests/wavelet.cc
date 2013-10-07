@@ -19,6 +19,7 @@
 #include "src/daubechies.h"
 #include "src/coiflets.h"
 #include "src/symlets.h"
+#include "tests/make_unique.h"
 
 const int BENCHMARK_LENGTH = 100000;
 
@@ -84,35 +85,7 @@ TEST(Wavelet, wavelet_apply_na) {
   ASSERT_EQF(vhi, desthi[index]);
   vhi = vlo = 0.f;
   for (int i = 0; i < 8; i++) {
-    float value = 0.f;
-    switch (i) {
-      case 0:
-        value = array[30];
-        break;
-      case 1:
-        value = array[31];
-        break;
-      case 2:
-        value = array[0];
-        break;
-      case 3:
-        value = array[1];
-        break;
-      case 4:
-        value = array[2];
-        break;
-      case 5:
-        value = array[3];
-        break;
-      case 6:
-        value = array[4];
-        break;
-      case 7:
-        value = array[5];
-        break;
-      default:
-        break;
-    }
+    float value = i < 2? array[30 + i] :  array[i - 2];
     vlo += value * kDaubechiesF[3][i];
     vhi += value * kDaubechiesF[3][8 - i - 1] * (i & 1 ? -1 : 1);
   }
@@ -122,40 +95,129 @@ TEST(Wavelet, wavelet_apply_na) {
   wavelet_apply_na(WAVELET_TYPE_DAUBECHIES, 8, array, 8, desthi, destlo);
 }
 
-TEST(Wavelet, wavelet_apply) {
-  float array[512];
-  const int length = sizeof(array) / sizeof(float);  // NOLINT(*)
+TEST(Wavelet, stationary_wavelet_apply_na) {
+  int length = 32;
+  float array[length], desthi[length], destlo[length];
   for (int i = 0; i < length; i++) {
     array[i] = i;
   }
-  auto prep = wavelet_prepare_array(8, array, length);
-  auto desthi = wavelet_allocate_destination(8, length);
-  auto destlo = wavelet_allocate_destination(8, length);
+  stationary_wavelet_apply_na(WAVELET_TYPE_DAUBECHIES, 8, array, length,
+                              desthi, destlo);
+  int index = 5;
+  float vhi = 0.f, vlo = 0.f;
+  for (int i = 0; i < 8; i++) {
+    vlo += array[index + i] * kDaubechiesF[3][i];
+    vhi += array[index + i] * kDaubechiesF[3][8 - i - 1] * (i & 1 ? -1 : 1);
+  }
+  ASSERT_EQF(vlo, destlo[index]);
+  ASSERT_EQF(vhi, desthi[index]);
+  vhi = vlo = 0.f;
+  for (int i = 0; i < 8; i++) {
+    float value = i < 2? array[30 + i] :  array[i - 2];
+    vlo += value * kDaubechiesF[3][i];
+    vhi += value * kDaubechiesF[3][8 - i - 1] * (i & 1 ? -1 : 1);
+  }
+  ASSERT_EQF(vlo, destlo[30]);
+  ASSERT_EQF(vhi, desthi[30]);
 
-  std::vector<std::pair<WaveletType, std::vector<int>>> wavelets {
-    { WAVELET_TYPE_DAUBECHIES, { 4, 6, 8, 12, 16 } },
-    { WAVELET_TYPE_SYMLET, { 4, 6, 8, 12, 16 } },
-    { WAVELET_TYPE_COIFLET, { 6, 12 } }
-  };
+  stationary_wavelet_apply_na(WAVELET_TYPE_DAUBECHIES, 8, array, 8,
+                              desthi, destlo);
+}
 
-  for (auto wp : wavelets) {
-    for (int order : wp.second) {
-      printf("Testing order %i...\n", order);
-      wavelet_apply(wp.first, order, prep, length, desthi, destlo);
-      float validdesthi[length / 2], validdestlo[length / 2];
-      wavelet_apply_na(wp.first, order, array, length,
-                       validdesthi, validdestlo);
-      for (int i = 0; i < length / 2; i++) {
-        ASSERT_EQF(validdesthi[i], desthi[i]);
-        ASSERT_EQF(validdestlo[i], destlo[i]);
-      }
-    }
+class WaveletTest : public ::testing::TestWithParam<
+      std::tuple<WaveletType, int>> {
+ public:
+  typedef std::unique_ptr<float, decltype(&std::free)> FloatPtr;
+
+ protected:
+  WaveletTest() : length_(512), array_(nullptr, std::free),
+      prep_(nullptr, std::free), desthi_(nullptr, std::free),
+      destlo_(nullptr, std::free) {
   }
 
-  free(desthi);
-  free(destlo);
-  free(prep);
+  virtual void SetUp() override {
+    array_ = std::uniquify(mallocf(length_), std::free);
+    for (size_t i = 0; i < length_; i++) {
+      array_.get()[i] = i;
+    }
+    prep_ = std::uniquify(wavelet_prepare_array(8, array_.get(), length_),
+                          std::free);
+    desthi_ = std::uniquify(wavelet_allocate_destination(8, length_),
+                            std::free);
+    destlo_ = std::uniquify(wavelet_allocate_destination(8, length_),
+                            std::free);
+  }
+
+  size_t length_;
+  FloatPtr array_;
+  FloatPtr prep_;
+  FloatPtr desthi_;
+  FloatPtr destlo_;
+};
+
+class StationaryWaveletTest : public WaveletTest {
+ protected:
+  virtual void SetUp() override {
+    array_ = std::uniquify(mallocf(length_), std::free);
+    for (size_t i = 0; i < length_; i++) {
+      array_.get()[i] = i;
+    }
+    desthi_ = std::uniquify(mallocf(length_), std::free);
+    destlo_ = std::uniquify(mallocf(length_), std::free);
+  }
+};
+
+TEST_P(WaveletTest, wavelet_apply) {
+  wavelet_apply(std::get<0>(GetParam()), std::get<1>(GetParam()),
+                prep_.get(), length_, desthi_.get(), destlo_.get());
+  float validdesthi[length_ / 2], validdestlo[length_ / 2];
+  wavelet_apply_na(std::get<0>(GetParam()), std::get<1>(GetParam()),
+                   array_.get(), length_, validdesthi, validdestlo);
+  for (size_t i = 0; i < length_ / 2; i++) {
+    ASSERT_EQF(validdesthi[i], desthi_.get()[i]) << "i = " << i;
+    ASSERT_EQF(validdestlo[i], destlo_.get()[i]) << "i = " << i;
+  }
 }
+
+TEST_P(StationaryWaveletTest, stationary_wavelet_apply) {
+  stationary_wavelet_apply(std::get<0>(GetParam()), std::get<1>(GetParam()),
+                           array_.get(), length_, desthi_.get(), destlo_.get());
+  float validdesthi[length_], validdestlo[length_];
+  stationary_wavelet_apply_na(std::get<0>(GetParam()), std::get<1>(GetParam()),
+                              array_.get(), length_, validdesthi, validdestlo);
+  for (size_t i = 0; i < length_; i++) {
+    ASSERT_EQF(validdesthi[i], desthi_.get()[i]) << "i = " << i;
+    ASSERT_EQF(validdestlo[i], destlo_.get()[i]) << "i = " << i;
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    DaubechiesAndSymlets, WaveletTest,
+    ::testing::Combine(
+        ::testing::Values(WAVELET_TYPE_DAUBECHIES, WAVELET_TYPE_SYMLET),
+        ::testing::Values(4, 6, 8, 12, 16)
+    ));
+
+INSTANTIATE_TEST_CASE_P(
+    Coiflets, WaveletTest,
+    ::testing::Combine(
+        ::testing::Values(WAVELET_TYPE_COIFLET),
+        ::testing::Values(6, 12)
+    ));
+
+INSTANTIATE_TEST_CASE_P(
+    DaubechiesAndSymlets, StationaryWaveletTest,
+    ::testing::Combine(
+        ::testing::Values(WAVELET_TYPE_DAUBECHIES, WAVELET_TYPE_SYMLET),
+        ::testing::Values(4, 6, 8, 12, 16)
+    ));
+
+INSTANTIATE_TEST_CASE_P(
+    Coiflets, StationaryWaveletTest,
+    ::testing::Combine(
+        ::testing::Values(WAVELET_TYPE_COIFLET),
+        ::testing::Values(6, 12)
+    ));
 
 #ifdef BENCHMARK
 #ifdef SIMD
