@@ -146,6 +146,7 @@ void convolute_overlap_save(ConvoluteOverlapSaveHandle handle,
   } else {
     memcpy(handle.H, h, handle.h_length * sizeof(float));
   }
+  memsetf(handle.H + handle.h_length, L - handle.h_length, 0);
 
   // H = FFT(paddedH, L)
   size_t fftComplexSize = (L + 2) * sizeof(float);
@@ -182,7 +183,7 @@ void convolute_overlap_save(ConvoluteOverlapSaveHandle handle,
     cciStart = L;
     for (int cci = 0; cci < L; cci += FLOAT_STEP) {
       complex_multiply(handle.fft_boiler_plate + cci, handle.H + cci,
-                     handle.fft_boiler_plate + cci);
+                       handle.fft_boiler_plate + cci);
     }
 #endif
     for (int cci = cciStart; cci < L + 2; cci += 2) {
