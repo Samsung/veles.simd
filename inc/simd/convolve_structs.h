@@ -10,15 +10,15 @@
  *  Copyright 2013 Samsung R&D Institute Russia
  */
 
-#ifndef INC_SIMD_CONVOLUTE_STRUCTS_H_
-#define INC_SIMD_CONVOLUTE_STRUCTS_H_
+#ifndef INC_SIMD_CONVOLVE_STRUCTS_H_
+#define INC_SIMD_CONVOLVE_STRUCTS_H_
 
 #include <stddef.h>
 #include <simd/common.h>
 
 SIMD_API_BEGIN
 
-struct ConvoluteOverlapSaveHandle {
+struct ConvolutionOverlapSaveHandle {
   void *fft_plan;
   void *fft_inverse_plan;
   float *fft_boiler_plate;
@@ -29,7 +29,7 @@ struct ConvoluteOverlapSaveHandle {
   int reverse;
 };
 
-struct ConvoluteFFTHandle {
+struct ConvolutionFFTHandle {
   void *fft_plan;
   void *fft_inverse_plan;
   int *M;
@@ -45,16 +45,16 @@ typedef enum {
   kConvolutionAlgorithmOverlapSave
 } ConvolutionAlgorithm;
 
-struct ConvoluteHandle {
+struct ConvolutionHandle {
   ConvolutionAlgorithm algorithm;
   int x_length;
   int h_length;
   union {
-    struct ConvoluteFFTHandle fft;
-    struct ConvoluteOverlapSaveHandle os;
+    struct ConvolutionFFTHandle fft;
+    struct ConvolutionOverlapSaveHandle os;
   } handle;
 };
 
 SIMD_API_END
 
-#endif  // INC_SIMD_CONVOLUTE_STRUCTS_H_
+#endif  // INC_SIMD_CONVOLVE_STRUCTS_H_

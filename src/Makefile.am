@@ -31,7 +31,7 @@ lib_LTLIBRARIES = libSimd.la
 # Build information for libSimd.la
 
 # Source files
-libSimd_la_SOURCES = avx_extra.c memory.c convolute.c correlate.c \
+libSimd_la_SOURCES = avx_extra.c memory.c convolve.c correlate.c \
 daubechies.c wavelet.c coiflets.c symlets.c matrix.c normalize.c
 
 # Used libraries

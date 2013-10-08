@@ -13,44 +13,44 @@
 #ifndef NO_FFTF
 #define LIBSIMD_IMPLEMENTATION
 #include "inc/simd/correlate.h"
-#include "inc/simd/convolute.h"
+#include "inc/simd/convolve.h"
 #include "inc/simd/arithmetic-inl.h"
 
-CrossCorrelateFFTHandle cross_correlate_fft_initialize(size_t xLength,
-                                                       size_t hLength) {
-  CrossCorrelateFFTHandle handle = convolute_fft_initialize(xLength, hLength);
+CrossCorrelationFFTHandle cross_correlate_fft_initialize(size_t xLength,
+                                                         size_t hLength) {
+  CrossCorrelationFFTHandle handle = convolve_fft_initialize(xLength, hLength);
   handle.reverse = 1;
   return handle;
 }
 
-void cross_correlate_fft(CrossCorrelateFFTHandle handle,
+void cross_correlate_fft(CrossCorrelationFFTHandle handle,
                          const float *x, const float *h,
                          float *result) {
-  convolute_fft(handle, x, h, result);
+  convolve_fft(handle, x, h, result);
 }
 
-void cross_correlate_fft_finalize(CrossCorrelateFFTHandle handle) {
-  convolute_fft_finalize(handle);
+void cross_correlate_fft_finalize(CrossCorrelationFFTHandle handle) {
+  convolve_fft_finalize(handle);
 }
 
-CrossCorrelateOverlapSaveHandle cross_correlate_overlap_save_initialize(
+CrossCorrelationOverlapSaveHandle cross_correlate_overlap_save_initialize(
     size_t xLength, size_t hLength) {
-  CrossCorrelateOverlapSaveHandle handle =
-      convolute_overlap_save_initialize(xLength, hLength);
+  CrossCorrelationOverlapSaveHandle handle =
+      convolve_overlap_save_initialize(xLength, hLength);
   handle.reverse = 1;
   return handle;
 }
 
-void cross_correlate_overlap_save(CrossCorrelateOverlapSaveHandle handle,
+void cross_correlate_overlap_save(CrossCorrelationOverlapSaveHandle handle,
                             const float *__restrict x,
                             const float *__restrict h,
                             float *result) {
-  convolute_overlap_save(handle, x, h, result);
+  convolve_overlap_save(handle, x, h, result);
 }
 
 void cross_correlate_overlap_save_finalize(
-    CrossCorrelateOverlapSaveHandle handle) {
-  convolute_overlap_save_finalize(handle);
+    CrossCorrelationOverlapSaveHandle handle) {
+  convolve_overlap_save_finalize(handle);
 }
 
 void cross_correlate_simd(int simd,
@@ -107,9 +107,9 @@ void cross_correlate_simd(int simd,
   }
 }
 
-CrossCorrelateHandle cross_correlate_initialize(size_t xLength,
+CrossCorrelationHandle cross_correlate_initialize(size_t xLength,
                                                 size_t hLength) {
-  CrossCorrelateHandle handle = convolute_initialize(xLength, hLength);
+  CrossCorrelationHandle handle = convolve_initialize(xLength, hLength);
   switch (handle.algorithm) {
     case kConvolutionAlgorithmFFT:
       handle.handle.fft.reverse = 1;
@@ -123,13 +123,13 @@ CrossCorrelateHandle cross_correlate_initialize(size_t xLength,
   return handle;
 }
 
-void cross_correlate(CrossCorrelateHandle handle,
+void cross_correlate(CrossCorrelationHandle handle,
                      const float *x, const float *h,
                      float *result) {
   switch (handle.algorithm) {
     case kConvolutionAlgorithmFFT:
     case kConvolutionAlgorithmOverlapSave:
-      convolute(handle, x, h, result);
+      convolve(handle, x, h, result);
       break;
     case kConvolutionAlgorithmBruteForce:
       cross_correlate_simd(1, x, handle.x_length, h, handle.h_length, result);
@@ -137,7 +137,7 @@ void cross_correlate(CrossCorrelateHandle handle,
   }
 }
 
-void cross_correlate_finalize(CrossCorrelateHandle handle) {
-  convolute_finalize(handle);
+void cross_correlate_finalize(CrossCorrelationHandle handle) {
+  convolve_finalize(handle);
 }
 #endif

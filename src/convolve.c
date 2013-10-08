@@ -1,4 +1,4 @@
-/*! @file convolute.c
+/*! @file convolve.c
  *  @brief Calculates the linear convolution of two signals.
  *  @author Markovtsev Vadim <v.markovtsev@samsung.com>
  *  @version 1.0
@@ -12,17 +12,17 @@
 
 #ifndef NO_FFTF
 #define LIBSIMD_IMPLEMENTATION
-#include "inc/simd/convolute.h"
+#include "inc/simd/convolve.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fftf/api.h>
 #include "inc/simd/arithmetic-inl.h"
 
-void convolute_simd(int simd,
-                    const float *x, size_t xLength,
-                    const float *h, size_t hLength,
-                    float *result) {
+void convolve_simd(int simd,
+                   const float *__restrict x, size_t xLength,
+                   const float *__restrict h, size_t hLength,
+                   float *__restrict result) {
   for (int n = 0; n < (int)(xLength + hLength - 1); n++) {
     float sum = 0.f;
     int beg = n < (int)xLength? 0 : n - xLength + 1;
@@ -77,13 +77,13 @@ void convolute_simd(int simd,
  }
 }
 
-ConvoluteOverlapSaveHandle convolute_overlap_save_initialize(
+ConvolutionOverlapSaveHandle convolve_overlap_save_initialize(
     size_t xLength, size_t hLength) {
   assert(hLength < xLength / 2);
   assert(xLength > 0);
   assert(hLength > 0);
 
-  ConvoluteOverlapSaveHandle handle;
+  ConvolutionOverlapSaveHandle handle;
   size_t M = hLength;  //  usual designation
   handle.x_length = xLength;
   handle.h_length = hLength;
@@ -122,7 +122,7 @@ ConvoluteOverlapSaveHandle convolute_overlap_save_initialize(
   return handle;
 }
 
-void convolute_overlap_save_finalize(ConvoluteOverlapSaveHandle handle) {
+void convolve_overlap_save_finalize(ConvolutionOverlapSaveHandle handle) {
   free(handle.fft_boiler_plate);
   fftf_destroy(handle.fft_plan);
   fftf_destroy(handle.fft_inverse_plan);
@@ -130,10 +130,10 @@ void convolute_overlap_save_finalize(ConvoluteOverlapSaveHandle handle) {
   free(handle.H);
 }
 
-void convolute_overlap_save(ConvoluteOverlapSaveHandle handle,
-                            const float *__restrict x,
-                            const float *__restrict h,
-                            float *result) {
+void convolve_overlap_save(ConvolutionOverlapSaveHandle handle,
+                           const float *x,
+                           const float *h,
+                           float *result) {
   assert(x != NULL);
   assert(h != NULL);
   assert(result != NULL);
@@ -205,11 +205,11 @@ void convolute_overlap_save(ConvoluteOverlapSaveHandle handle,
   }
 }
 
-ConvoluteFFTHandle convolute_fft_initialize(size_t xLength, size_t hLength) {
+ConvolutionFFTHandle convolve_fft_initialize(size_t xLength, size_t hLength) {
   assert(hLength > 0);
   assert(xLength > 0);
 
-  ConvoluteFFTHandle handle;
+  ConvolutionFFTHandle handle;
 
   int M = xLength + hLength - 1;
   if ((M & (M - 1)) != 0) {
@@ -254,7 +254,7 @@ ConvoluteFFTHandle convolute_fft_initialize(size_t xLength, size_t hLength) {
   return handle;
 }
 
-void convolute_fft_finalize(ConvoluteFFTHandle handle) {
+void convolve_fft_finalize(ConvolutionFFTHandle handle) {
   free(handle.inputs[0]);
   free(handle.inputs[1]);
   free(handle.inputs);
@@ -263,9 +263,9 @@ void convolute_fft_finalize(ConvoluteFFTHandle handle) {
   fftf_destroy(handle.fft_inverse_plan);
 }
 
-void convolute_fft(ConvoluteFFTHandle handle,
-                   const float *x, const float *h,
-                   float *result) {
+void convolve_fft(ConvolutionFFTHandle handle,
+                  const float *x, const float *h,
+                  float *result) {
   assert(x != NULL);
   assert(h != NULL);
   assert(result != NULL);
@@ -302,22 +302,22 @@ void convolute_fft(ConvoluteFFTHandle handle,
   real_multiply_scalar(X, xLength + hLength - 1, 1.0f / M, result);
 }
 
-ConvoluteHandle convolute_initialize(size_t xLength, size_t hLength) {
-  ConvoluteHandle handle;
+ConvolutionHandle convolve_initialize(size_t xLength, size_t hLength) {
+  ConvolutionHandle handle;
   handle.x_length = xLength;
   handle.h_length = hLength;
 #ifdef __ARM_NEON__
   if (xLength > hLength * 2) {
     if (xLength > 200) {
       handle.algorithm = kConvolutionAlgorithmOverlapSave;
-      handle.handle.os = convolute_overlap_save_initialize(xLength, hLength);
+      handle.handle.os = convolve_overlap_save_initialize(xLength, hLength);
     } else {
       handle.algorithm = kConvolutionAlgorithmBruteForce;
     }
   } else {
     if (xLength > 50) {
       handle.algorithm = kConvolutionAlgorithmFFT;
-      handle.handle.fft = convolute_fft_initialize(xLength, hLength);
+      handle.handle.fft = convolve_fft_initialize(xLength, hLength);
     } else {
       handle.algorithm = kConvolutionAlgorithmBruteForce;
     }
@@ -326,14 +326,14 @@ ConvoluteHandle convolute_initialize(size_t xLength, size_t hLength) {
   if (xLength > hLength * 2) {
     if (xLength > 200) {
       handle.algorithm = kConvolutionAlgorithmOverlapSave;
-      handle.handle.os = convolute_overlap_save_initialize(xLength, hLength);
+      handle.handle.os = convolve_overlap_save_initialize(xLength, hLength);
     } else {
       handle.algorithm = kConvolutionAlgorithmBruteForce;
     }
   } else {
     if (xLength > 350) {
       handle.algorithm = kConvolutionAlgorithmFFT;
-      handle.handle.fft = convolute_fft_initialize(xLength, hLength);
+      handle.handle.fft = convolve_fft_initialize(xLength, hLength);
     } else {
       handle.algorithm = kConvolutionAlgorithmBruteForce;
     }
@@ -342,31 +342,31 @@ ConvoluteHandle convolute_initialize(size_t xLength, size_t hLength) {
   return handle;
 }
 
-void convolute_finalize(ConvoluteHandle handle) {
+void convolve_finalize(ConvolutionHandle handle) {
   switch (handle.algorithm) {
     case kConvolutionAlgorithmFFT:
-      convolute_fft_finalize(handle.handle.fft);
+      convolve_fft_finalize(handle.handle.fft);
       break;
     case kConvolutionAlgorithmOverlapSave:
-      convolute_overlap_save_finalize(handle.handle.os);
+      convolve_overlap_save_finalize(handle.handle.os);
       break;
     case kConvolutionAlgorithmBruteForce:
       break;
   }
 }
 
-void convolute(ConvoluteHandle handle,
-               const float *x, const float *h,
-               float *result) {
+void convolve(ConvolutionHandle handle,
+              const float *__restrict x, const float *__restrict h,
+              float *__restrict result) {
   switch (handle.algorithm) {
     case kConvolutionAlgorithmFFT:
-      convolute_fft(handle.handle.fft, x, h, result);
+      convolve_fft(handle.handle.fft, x, h, result);
       break;
     case kConvolutionAlgorithmOverlapSave:
-      convolute_overlap_save(handle.handle.os, x, h, result);
+      convolve_overlap_save(handle.handle.os, x, h, result);
       break;
     case kConvolutionAlgorithmBruteForce:
-      convolute_simd(1, x, handle.x_length, h, handle.h_length, result);
+      convolve_simd(1, x, handle.x_length, h, handle.h_length, result);
       break;
   }
 }

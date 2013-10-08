@@ -16,19 +16,19 @@
 #include <stddef.h>
 #include <simd/common.h>
 #include <simd/attributes.h>
-#include <simd/convolute_structs.h>
+#include <simd/convolve_structs.h>
 
 SIMD_API_BEGIN
 
-typedef struct ConvoluteFFTHandle CrossCorrelateFFTHandle;
+typedef struct ConvolutionFFTHandle CrossCorrelationFFTHandle;
 
 /// @brief Prepares for the calculation of cross-correlation of two signals
 /// using the FFT method.
 /// @param xLength The length of the first array in float-s.
 /// @param hLength The length of the second array in float-s.
 /// @return The handle for cross_correlate_fft().
-CrossCorrelateFFTHandle cross_correlate_fft_initialize(size_t xLength,
-                                                       size_t hLength);
+CrossCorrelationFFTHandle cross_correlate_fft_initialize(size_t xLength,
+                                                         size_t hLength);
 
 /// @brief Calculates the cross-correlation of two signals using
 /// the FFT method.
@@ -37,22 +37,22 @@ CrossCorrelateFFTHandle cross_correlate_fft_initialize(size_t xLength,
 /// @param h The second signal (short one).
 /// @param result The resulting signal of length xLength.
 /// @note result and x may be the same arrays.
-void cross_correlate_fft(CrossCorrelateFFTHandle handle,
+void cross_correlate_fft(CrossCorrelationFFTHandle handle,
                          const float *x, const float *h,
                          float *result) NOTNULL(2, 3, 4);
 
 /// @brief Frees any resources allocated by cross_correlate_fft_initialize().
 /// @param handle The structure obtained from cross_correlate_fft_initialize().
-void cross_correlate_fft_finalize(CrossCorrelateFFTHandle handle);
+void cross_correlate_fft_finalize(CrossCorrelationFFTHandle handle);
 
-typedef struct ConvoluteOverlapSaveHandle CrossCorrelateOverlapSaveHandle;
+typedef struct ConvolutionOverlapSaveHandle CrossCorrelationOverlapSaveHandle;
 
 /// @brief Prepares for the calculation of cross-correlation of two signals
 /// using the overlap-save method.
 /// @param xLength The length of the first array in float-s.
 /// @param hLength The length of the second array in float-s.
 /// @return The handle for cross_correlate_overlap_save().
-CrossCorrelateOverlapSaveHandle cross_correlate_overlap_save_initialize(
+CrossCorrelationOverlapSaveHandle cross_correlate_overlap_save_initialize(
     size_t xLength, size_t hLength);
 
 /// @brief Calculates the cross-correlation of two signals using
@@ -63,7 +63,7 @@ CrossCorrelateOverlapSaveHandle cross_correlate_overlap_save_initialize(
 /// @param h The second signal (short one).
 /// @param result The resulting signal of length xLength.
 /// @note result and x may be the same arrays.
-void cross_correlate_overlap_save(CrossCorrelateOverlapSaveHandle handle,
+void cross_correlate_overlap_save(CrossCorrelationOverlapSaveHandle handle,
                                   const float *__restrict x,
                                   const float *__restrict h,
                                   float *result) NOTNULL(2, 3, 4);
@@ -73,7 +73,7 @@ void cross_correlate_overlap_save(CrossCorrelateOverlapSaveHandle handle,
 /// @param handle The structure obtained from
 /// cross_correlate_overlap_save_initialize().
 void cross_correlate_overlap_save_finalize(
-    CrossCorrelateOverlapSaveHandle handle);
+    CrossCorrelationOverlapSaveHandle handle);
 
 /// @brief Calculates the cross-correlation of two signals using
 /// the "brute force" method.
@@ -89,14 +89,15 @@ void cross_correlate_simd(int simd,
                           const float *h, size_t hLength,
                           float *result) NOTNULL(2, 4, 6);
 
-typedef struct ConvoluteHandle CrossCorrelateHandle;
+typedef struct ConvolutionHandle CrossCorrelationHandle;
 
 /// @brief Prepares for the calculation of cross-correlation of
 /// two signals using the best method.
 /// @param xLength The length of the first array in float-s.
 /// @param hLength The length of the second array in float-s.
 /// @return The handle for cross_correlate().
-CrossCorrelateHandle cross_correlate_initialize(size_t xLength, size_t hLength);
+CrossCorrelationHandle cross_correlate_initialize(size_t xLength,
+                                                  size_t hLength);
 
 /// @brief Calculates the cross-correlation of two signals using
 /// the best method.
@@ -105,7 +106,7 @@ CrossCorrelateHandle cross_correlate_initialize(size_t xLength, size_t hLength);
 /// @param h The second signal (short one).
 /// @param result The resulting signal of length xLength.
 /// @note result and x may be the same arrays.
-void cross_correlate(CrossCorrelateHandle handle,
+void cross_correlate(CrossCorrelationHandle handle,
                      const float *x, const float *h,
                      float *result) NOTNULL(2, 3, 4);
 
@@ -113,7 +114,7 @@ void cross_correlate(CrossCorrelateHandle handle,
 /// cross_correlate_overlap_initialize().
 /// @param handle The structure obtained from
 /// cross_correlate_overlap_initialize().
-void cross_correlate_finalize(CrossCorrelateHandle handle);
+void cross_correlate_finalize(CrossCorrelationHandle handle);
 
 SIMD_API_END
 
