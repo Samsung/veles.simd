@@ -140,20 +140,18 @@ void convolute_overlap_save(ConvoluteOverlapSaveHandle handle,
 
   size_t M = handle.h_length;  //  usual designation
   int L = *handle.L;
+  size_t fft_complex_size = (L + 2) * sizeof(float);
 
   if (handle.reverse) {
-    rmemcpyf(handle.H, h, handle.h_length);
+    rmemcpyf(handle.fft_boiler_plate, h, handle.h_length);
   } else {
-    memcpy(handle.H, h, handle.h_length * sizeof(float));
+    memcpy(handle.fft_boiler_plate, h, handle.h_length * sizeof(float));
   }
-  memsetf(handle.H + handle.h_length, L - handle.h_length, 0);
+  memsetf(handle.fft_boiler_plate + handle.h_length, L - handle.h_length, 0);
 
   // H = FFT(paddedH, L)
-  size_t fftComplexSize = (L + 2) * sizeof(float);
-  memcpy(handle.fft_boiler_plate, handle.H, L * sizeof(float));
-
   fftf_calc(handle.fft_plan);
-  memcpy(handle.H, handle.fft_boiler_plate, fftComplexSize);
+  memcpy(handle.H, handle.fft_boiler_plate, fft_complex_size);
 
   int step = L - (M - 1);
   // Note: no "#pragma omp parallel for" here since
