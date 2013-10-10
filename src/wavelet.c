@@ -168,6 +168,7 @@ INLINE void check_wavelet_order(WaveletType type, size_t order) {
 
 INLINE NOTNULL(3, 4) void initialize_highpass_lowpass(
     WaveletType type, int order, float *highpass, float *lowpass) {
+  assert(order >= 2);
   check_wavelet_order(type, order);
   for (int i = 0; i < order; i++) {
     float val = 0.f;
@@ -176,6 +177,7 @@ INLINE NOTNULL(3, 4) void initialize_highpass_lowpass(
         val =  kDaubechiesF[order / 2 - 1][i];
         break;
       case WAVELET_TYPE_COIFLET:
+        assert(order >= 6);
         val = kCoifletsF[order / 6 - 1][i];
         break;
       case WAVELET_TYPE_SYMLET:
@@ -195,6 +197,7 @@ INLINE NOTNULL(4, 5) void stationary_initialize_highpass_lowpass(
     return;
   }
   int order = size / stride;
+  assert(order >= 2);
   check_wavelet_order(type, order);
   for (int i = 0; i < size; i++) {
     if (i % stride != 0) {
@@ -208,6 +211,7 @@ INLINE NOTNULL(4, 5) void stationary_initialize_highpass_lowpass(
         val = kDaubechiesF[order / 2 - 1][ri];
         break;
       case WAVELET_TYPE_COIFLET:
+        assert(order >= 6);
         val = kCoifletsF[order / 6 - 1][ri];
         break;
       case WAVELET_TYPE_SYMLET:
