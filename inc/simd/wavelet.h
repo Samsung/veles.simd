@@ -101,6 +101,7 @@ void wavelet_apply_na(WaveletType type, int order,
 /// @param type The wavelet type.
 /// @param order The order of the wavelet to apply.
 /// For example, order = 6 means 6 coefficients.
+/// @param level The current decomposition level.
 /// @param src An array of floating point numbers to transform.
 /// @param length The logical length of src (in float-s, not in bytes).
 /// @param desthi The high frequency part of result (highpass). It must be at
@@ -110,17 +111,18 @@ void wavelet_apply_na(WaveletType type, int order,
 /// @details Daubechies wavelet of order 8 is used by default.
 /// @pre length must be greater than or equal to 8.
 /// @pre length must be even.
-void stationary_wavelet_apply(WaveletType type, int order,
+void stationary_wavelet_apply(WaveletType type, int order, int level,
                               const float *__restrict src, size_t length,
                               float *__restrict desthi,
                               float *__restrict destlo)
-    NOTNULL(3, 5, 6);
+    NOTNULL(4, 6, 7);
 
 /// @brief Performs a single stationary (undecimated) wavelet transform
 /// on series of real numbers (no SIMD acceleration is used).
 /// @param type The wavelet type.
 /// @param order The order of the wavelet to apply.
 /// For example, order = 6 means 6 coefficients.
+/// @param level The current decomposition level.
 /// @param src An array of floating point numbers to transform.
 /// @param length The logical length of src (in float-s, not in bytes).
 /// @param desthi The high frequency part of result (highpass). It must be at
@@ -129,11 +131,11 @@ void stationary_wavelet_apply(WaveletType type, int order,
 /// least of size length.
 /// @pre length must be greater than or equal to (order * 2).
 /// @pre length must be even.
-void stationary_wavelet_apply_na(WaveletType type, int order,
+void stationary_wavelet_apply_na(WaveletType type, int order, int level,
                                  const float *__restrict src, size_t length,
                                  float *__restrict desthi,
                                  float *__restrict destlo)
-    NOTNULL(3, 5, 6);
+    NOTNULL(4, 6, 7);
 
 SIMD_API_END
 
