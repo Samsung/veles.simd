@@ -370,26 +370,26 @@ static void wavelet_apply2(WaveletType type,
 
   const __m256 hpvec = _mm256_load_ps(highpassC);
   const __m256 lpvec = _mm256_load_ps(lowpassC);
-  for (int i = 0, di = 0; i < ilength - 6; i += 8, di += 4) {
-    __m256 srcvec = _mm256_load_ps(src + i);
-    __m256 vechi = _mm256_mul_ps(srcvec, hpvec);
-    vechi = _mm256_hadd_ps(vechi, vechi);
-    __m256 veclo = _mm256_mul_ps(srcvec, lpvec);
-    veclo = _mm256_hadd_ps(veclo, veclo);
-
-    desthi[di] = vechi[0];
-    destlo[di] = veclo[0];
-    desthi[di + 1] = vechi[1];
-    destlo[di + 1] = veclo[1];
-    desthi[di + 2] = vechi[4];
-    destlo[di + 2] = veclo[4];
-    desthi[di + 3] = vechi[5];
-    destlo[di + 3] = veclo[5];
+  for (int i = 0; i < ilength - 15; i += 16) {
+    __m256 srcvec1 = _mm256_load_ps(src + i);
+    __m256 srcvec2 = _mm256_load_ps(src + i + 8);
+    __m256 vechi1 = _mm256_mul_ps(srcvec1, hpvec);
+    __m256 vechi2 = _mm256_mul_ps(srcvec2, hpvec);
+    __m256 vechi1p = _mm256_permute2f128_ps(vechi1, vechi2, 32);
+    __m256 vechi2p = _mm256_permute2f128_ps(vechi1, vechi2, 49);
+    __m256 vechi = _mm256_hadd_ps(vechi1p, vechi2p);
+    __m256 veclo1 = _mm256_mul_ps(srcvec1, lpvec);
+    __m256 veclo2 = _mm256_mul_ps(srcvec2, lpvec);
+    __m256 veclo1p = _mm256_permute2f128_ps(veclo1, veclo2, 32);
+    __m256 veclo2p = _mm256_permute2f128_ps(veclo1, veclo2, 49);
+    __m256 veclo = _mm256_hadd_ps(veclo1p, veclo2p);
+    _mm256_store_ps(desthi + i / 2, vechi);
+    _mm256_store_ps(destlo + i / 2, veclo);
   }
 #elif defined(__ARM_NEON__)
   const float32x4_t hivec = vld1q_f32(highpassC);
   const float32x4_t lovec = vld1q_f32(lowpassC);
-  for (int i = 0, di = 0; i < ilength - 6; i += 4, di += 4) {
+  for (int i = 0, i < ilength - 7; i += 8) {
     float32x4_t srcvec1 = vld1q_f32(src + i);
     float32x4_t srcvec2 = vld1q_f32(src + i + 4);
 
@@ -407,14 +407,10 @@ static void wavelet_apply2(WaveletType type,
     float32x2_t vecreslo2 = vpadd_f32(vget_high_f32(vecloadd2),
                                       vget_low_f32(vecloadd2));
 
-    desthi[i] = vget_lane_f32(vecreshi1, 0);
-    destlo[i] = vget_lane_f32(vecreslo1, 0);
-    desthi[i + 1] = vget_lane_f32(vecreshi1, 1);
-    destlo[i + 1] = vget_lane_f32(vecreslo1, 1);
-    desthi[i + 2] = vget_lane_f32(vecreshi2, 0);
-    destlo[i + 2] = vget_lane_f32(vecreslo2, 0);
-    desthi[i + 3] = vget_lane_f32(vecreshi2, 1);
-    destlo[i + 3] = vget_lane_f32(vecreslo2, 1);
+    vst1_f32(vecreshi1, desthi + i / 2);
+    vst1_f32(vecreshi2, desthi + i / 2 + 2);
+    vst1_f32(vecreslo1, destlo + i / 2);
+    vst1_f32(vecreslo2, destlo + i / 2 + 2);
   }
 #else
 #error This SIMD variant is not supported.
@@ -480,31 +476,15 @@ static void stationary_wavelet_apply2(WaveletType type, int level,
     __m256 srcvec1 = _mm256_loadu_ps(src + i);
     __m256 srcvec2 = _mm256_loadu_ps(src + i + 1);
     __m256 vechi1 = _mm256_mul_ps(srcvec1, hpvec);
-    vechi1 = _mm256_hadd_ps(vechi1, vechi1);
-    __m256 veclo1 = _mm256_mul_ps(srcvec1, lpvec);
-    veclo1 = _mm256_hadd_ps(veclo1, veclo1);
     __m256 vechi2 = _mm256_mul_ps(srcvec2, hpvec);
-    vechi2 = _mm256_hadd_ps(vechi2, vechi2);
+    __m256 vechi = _mm256_hadd_ps(vechi1, vechi2);
+    vechi = _mm256_permute_ps(vechi, 216);
+    __m256 veclo1 = _mm256_mul_ps(srcvec1, lpvec);
     __m256 veclo2 = _mm256_mul_ps(srcvec2, lpvec);
-    veclo2 = _mm256_hadd_ps(veclo2, veclo2);
-
-    desthi[i] = vechi1[0];
-    destlo[i] = veclo1[0];
-    desthi[i + 1] = vechi2[0];
-    destlo[i + 1] = veclo2[0];
-    desthi[i + 2] = vechi1[1];
-    destlo[i + 2] = veclo1[1];
-    desthi[i + 3] = vechi2[1];
-    destlo[i + 3] = veclo2[1];
-
-    desthi[i + 4] = vechi1[4];
-    destlo[i + 4] = veclo1[4];
-    desthi[i + 5] = vechi2[4];
-    destlo[i + 5] = veclo2[4];
-    desthi[i + 6] = vechi1[5];
-    destlo[i + 6] = veclo1[5];
-    desthi[i + 7] = vechi2[5];
-    destlo[i + 7] = veclo2[5];
+    __m256 veclo = _mm256_hadd_ps(veclo1, veclo2);
+    veclo = _mm256_permute_ps(veclo, 216);
+    _mm256_store_ps(desthi + i, vechi);
+    _mm256_store_ps(destlo + i, veclo);
   }
 #elif defined(__ARM_NEON__)
   int simd_end = ilength - 4;
@@ -527,15 +507,10 @@ static void stationary_wavelet_apply2(WaveletType type, int level,
                                       vget_low_f32(vechiadd2));
     float32x2_t vecreslo2 = vpadd_f32(vget_high_f32(vecloadd2),
                                       vget_low_f32(vecloadd2));
-
-    desthi[i] = vget_lane_f32(vecreshi1, 0);
-    destlo[i] = vget_lane_f32(vecreslo1, 0);
-    desthi[i + 1] = vget_lane_f32(vecreshi2, 0);
-    destlo[i + 1] = vget_lane_f32(vecreslo2, 0);
-    desthi[i + 2] = vget_lane_f32(vecreshi1, 1);
-    destlo[i + 2] = vget_lane_f32(vecreslo1, 1);
-    desthi[i + 3] = vget_lane_f32(vecreshi2, 1);
-    destlo[i + 3] = vget_lane_f32(vecreslo2, 1);
+    float32x2x2_t rhi = vtrn_f32(vecreshi1, vecreshi2);
+    float32x2x2_t rlo = vtrn_f32(vecreslo1, vecreslo2);
+    vst2_f32(desthi, rhi);
+    vst2_f32(destlo, rlo);
   }
 #else
 #error This SIMD variant is not supported.
