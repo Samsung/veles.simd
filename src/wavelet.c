@@ -389,7 +389,7 @@ static void wavelet_apply2(WaveletType type,
 #elif defined(__ARM_NEON__)
   const float32x4_t hivec = vld1q_f32(highpassC);
   const float32x4_t lovec = vld1q_f32(lowpassC);
-  for (int i = 0, i < ilength - 7; i += 8) {
+  for (int i = 0; i < ilength - 7; i += 8) {
     float32x4_t srcvec1 = vld1q_f32(src + i);
     float32x4_t srcvec2 = vld1q_f32(src + i + 4);
 
@@ -407,10 +407,10 @@ static void wavelet_apply2(WaveletType type,
     float32x2_t vecreslo2 = vpadd_f32(vget_high_f32(vecloadd2),
                                       vget_low_f32(vecloadd2));
 
-    vst1_f32(vecreshi1, desthi + i / 2);
-    vst1_f32(vecreshi2, desthi + i / 2 + 2);
-    vst1_f32(vecreslo1, destlo + i / 2);
-    vst1_f32(vecreslo2, destlo + i / 2 + 2);
+    vst1_f32(desthi + i / 2, vecreshi1);
+    vst1_f32(desthi + i / 2 + 2, vecreshi2);
+    vst1_f32(destlo + i / 2, vecreslo1);
+    vst1_f32(destlo + i / 2 + 2, vecreslo2);
   }
 #else
 #error This SIMD variant is not supported.
@@ -1631,10 +1631,10 @@ static void stationary_wavelet_applyN_core(const float* highpassC,
     for (int j = 0; j < size; j += 8) {
       float32x4_t srcvec1 = vld1q_f32(src + i + j);
       float32x4_t srcvec2 = vld1q_f32(src + i + j + 4);
-      float32x4_t hivec1 = vld1q_f32(highpassC, j);
-      float32x4_t lovec1 = vld1q_f32(lowpassC, j);
-      float32x4_t hivec2 = vld1q_f32(highpassC, j + 4);
-      float32x4_t lovec2 = vld1q_f32(lowpassC, j + 4);
+      float32x4_t hivec1 = vld1q_f32(highpassC + j);
+      float32x4_t lovec1 = vld1q_f32(lowpassC + j);
+      float32x4_t hivec2 = vld1q_f32(highpassC + j + 4);
+      float32x4_t lovec2 = vld1q_f32(lowpassC + j + 4);
       rvechi = vmlaq_f32(rvechi, srcvec1, hivec1);
       rveclo = vmlaq_f32(rveclo, srcvec1, lovec1);
       rvechi = vmlaq_f32(rvechi, srcvec2, hivec2);
