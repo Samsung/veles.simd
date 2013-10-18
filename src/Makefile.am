@@ -32,7 +32,8 @@ lib_LTLIBRARIES = libSimd.la
 
 # Source files
 libSimd_la_SOURCES = avx_extra.c memory.c convolve.c correlate.c \
-daubechies.c wavelet.c coiflets.c symlets.c matrix.c normalize.c
+daubechies.c wavelet.c coiflets.c symlets.c matrix.c normalize.c \
+detect_peaks.c
 
 # Used libraries
 libSimd_la_CFLAGS = $(AM_CFLAGS) @FFTF_CFLAGS@

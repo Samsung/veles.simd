@@ -24,7 +24,7 @@
 ##  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 TESTS = memory_test arithmetic convolve correlate wavelet matrix normalize \
-	mathfun
+	mathfun detect_peaks
 
 PARALLEL_SUBDIRS =
 
