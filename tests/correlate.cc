@@ -65,24 +65,20 @@ TEST(correlate, cross_correlate_fft) {
     h[i] = i / (hlen - 1.0f);
   }
 
-  float verif[xlen + hlen - 1];
-  cross_correlate_reference(x, xlen, h, hlen, verif);
-  DebugPrintConvolution("REFERENCE", verif);
-
   float res[xlen + hlen - 1];
   auto handle = cross_correlate_fft_initialize(xlen, hlen);
   cross_correlate_fft(handle, x, h, res);
   cross_correlate_fft_finalize(handle);
+
+  float verif[xlen + hlen - 1];
+  cross_correlate_reference(x, xlen, h, hlen, verif);
+
+  DebugPrintConvolution("REFERENCE", verif);
   DebugPrintConvolution("FFT\t", res);
 
-  int firstDifferenceIndex = -1;
   for (int i = 0; i < xlen + hlen - 1; i++) {
-    float delta = res[i] - verif[i];
-    if (delta * delta > 1E-6 && firstDifferenceIndex == -1) {
-      firstDifferenceIndex = i;
-    }
+    ASSERT_NEAR(res[i], verif[i], 1E-3) << i;
   }
-  ASSERT_EQ(-1, firstDifferenceIndex);
 }
 
 TEST(correlate, cross_correlate_overlap_save) {
@@ -108,14 +104,9 @@ TEST(correlate, cross_correlate_overlap_save) {
   cross_correlate_overlap_save_finalize(handle);
   DebugPrintConvolution("OVERLAP-SAVE", res);
 
-  int firstDifferenceIndex = -1;
   for (int i = 0; i < xlen + hlen - 1; i++) {
-    float delta = res[i] - verif[i];
-    if (delta * delta > 1E-6 && firstDifferenceIndex == -1) {
-      firstDifferenceIndex = i;
-    }
+    ASSERT_NEAR(res[i], verif[i], 1E-3) << i;
   }
-  ASSERT_EQ(-1, firstDifferenceIndex);
 }
 
 TEST(correlate, cross_correlate_simd) {
@@ -137,14 +128,9 @@ TEST(correlate, cross_correlate_simd) {
   float res[xlen + hlen - 1];
   cross_correlate_simd(true, x, xlen, h, hlen, res);
 
-  int firstDifferenceIndex = -1;
   for (int i = 0; i < xlen + hlen - 1; i++) {
-    float delta = res[i] - verif[i];
-    if (delta * delta > 1E-6 && firstDifferenceIndex == -1) {
-      firstDifferenceIndex = i;
-    }
+    ASSERT_NEAR(res[i], verif[i], 1E-3) << i;
   }
-  ASSERT_EQ(-1, firstDifferenceIndex);
 }
 
 #endif
