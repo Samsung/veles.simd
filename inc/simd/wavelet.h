@@ -64,6 +64,7 @@ void wavelet_recycle_source(int order, float *src, size_t length,
 /// @param type The wavelet type.
 /// @param order The order of the wavelet to apply.
 /// For example, order = 6 means 6 coefficients.
+/// @param ext The way to extend the signal.
 /// @param src An array of floating point numbers to transform.
 /// @param length The logical length of src (in float-s, not in bytes).
 /// @param desthi The high frequency part of result (highpass). It must be at
@@ -73,16 +74,17 @@ void wavelet_recycle_source(int order, float *src, size_t length,
 /// @details Daubechies wavelet of order 8 is used by default.
 /// @pre length must be greater than or equal to 8.
 /// @pre length must be even.
-void wavelet_apply(WaveletType type, int order,
+void wavelet_apply(WaveletType type, int order, ExtensionType ext,
                    const float *__restrict src, size_t length,
                    float *__restrict desthi, float *__restrict destlo)
-    NOTNULL(3, 5, 6);
+    NOTNULL(4, 6, 7);
 
 /// @brief Performs a single wavelet transform on series of real numbers.
 /// (no SIMD acceleration is used).
 /// @param type The wavelet type.
 /// @param order The order of the wavelet to apply.
 /// For example, order = 6 means 6 coefficients.
+/// @param ext The way to extend the signal.
 /// @param src An array of floating point numbers to transform.
 /// @param length The logical length of src (in float-s, not in bytes).
 /// @param desthi The high frequency part of result (highpass). It must be at
@@ -91,10 +93,10 @@ void wavelet_apply(WaveletType type, int order,
 /// least of size length/2.
 /// @pre length must be greater than or equal to (order * 2).
 /// @pre length must be even.
-void wavelet_apply_na(WaveletType type, int order,
+void wavelet_apply_na(WaveletType type, int order, ExtensionType ext,
                       const float *__restrict src, size_t length,
                       float *__restrict desthi, float *__restrict destlo)
-    NOTNULL(3, 5, 6);
+    NOTNULL(4, 6, 7);
 
 /// @brief Performs a single stationary (undecimated) wavelet transform
 /// on series of real numbers.
@@ -102,6 +104,7 @@ void wavelet_apply_na(WaveletType type, int order,
 /// @param order The order of the wavelet to apply.
 /// For example, order = 6 means 6 coefficients.
 /// @param level The current decomposition level.
+/// @param ext The way to extend the signal.
 /// @param src An array of floating point numbers to transform.
 /// @param length The logical length of src (in float-s, not in bytes).
 /// @param desthi The high frequency part of result (highpass). It must be at
@@ -112,10 +115,11 @@ void wavelet_apply_na(WaveletType type, int order,
 /// @pre length must be greater than or equal to 8.
 /// @pre length must be even.
 void stationary_wavelet_apply(WaveletType type, int order, int level,
+                              ExtensionType ext,
                               const float *__restrict src, size_t length,
                               float *__restrict desthi,
                               float *__restrict destlo)
-    NOTNULL(4, 6, 7);
+    NOTNULL(5, 7, 8);
 
 /// @brief Performs a single stationary (undecimated) wavelet transform
 /// on series of real numbers (no SIMD acceleration is used).
@@ -123,6 +127,7 @@ void stationary_wavelet_apply(WaveletType type, int order, int level,
 /// @param order The order of the wavelet to apply.
 /// For example, order = 6 means 6 coefficients.
 /// @param level The current decomposition level.
+/// @param ext The way to extend the signal.
 /// @param src An array of floating point numbers to transform.
 /// @param length The logical length of src (in float-s, not in bytes).
 /// @param desthi The high frequency part of result (highpass). It must be at
@@ -132,10 +137,11 @@ void stationary_wavelet_apply(WaveletType type, int order, int level,
 /// @pre length must be greater than or equal to (order * 2).
 /// @pre length must be even.
 void stationary_wavelet_apply_na(WaveletType type, int order, int level,
+                                 ExtensionType ext,
                                  const float *__restrict src, size_t length,
                                  float *__restrict desthi,
                                  float *__restrict destlo)
-    NOTNULL(4, 6, 7);
+    NOTNULL(5, 7, 8);
 
 SIMD_API_END
 

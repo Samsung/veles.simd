@@ -167,7 +167,8 @@ INLINE void check_wavelet_order(WaveletType type, size_t order) {
 }
 
 INLINE NOTNULL(3, 4) void initialize_highpass_lowpass(
-    WaveletType type, int order, float *highpass, float *lowpass) {
+    WaveletType type, int order, float *restrict highpass,
+    float *restrict lowpass) {
   assert(order >= 2);
   check_wavelet_order(type, order);
   for (int i = 0; i < order; i++) {
@@ -190,7 +191,8 @@ INLINE NOTNULL(3, 4) void initialize_highpass_lowpass(
 }
 
 INLINE NOTNULL(4, 5) void stationary_initialize_highpass_lowpass(
-    WaveletType type, int size, int level, float *highpass, float *lowpass) {
+    WaveletType type, int size, int level, float *restrict highpass,
+    float *restrict lowpass) {
   int stride = 1 << (level - 1);
   if (stride == 1) {
     initialize_highpass_lowpass(type, size, highpass, lowpass);
@@ -223,7 +225,30 @@ INLINE NOTNULL(4, 5) void stationary_initialize_highpass_lowpass(
   }
 }
 
-void wavelet_apply_na(WaveletType type, int order,
+INLINE NOTNULL(3, 4) void initialize_extension(ExtensionType ext,
+                                               size_t extLength,
+                                               const float *restrict src,
+                                               size_t length,
+                                               float *restrict result) {
+  for (int i = 0; i < (int)extLength; i++) {
+    switch (ext) {
+      case EXTENSION_TYPE_PERIODIC:
+        result[i] = src[i % length];
+        break;
+      case EXTENSION_TYPE_MIRROR:
+        result[i] = src[length - 1 - (i % length)];
+        break;
+      case EXTENSION_TYPE_CONSTANT:
+        result[i] = src[length - 1];
+        break;
+      case EXTENSION_TYPE_ZERO:
+        result[i] = 0;
+        break;
+    }
+  }
+}
+
+void wavelet_apply_na(WaveletType type, int order, ExtensionType ext,
                       const float *__restrict src, size_t length,
                       float *__restrict desthi, float *__restrict destlo) {
   check_length(length);
@@ -232,13 +257,15 @@ void wavelet_apply_na(WaveletType type, int order,
   int ilength = (int)length;
   float highpassC[order], lowpassC[order];
   initialize_highpass_lowpass(type, order, highpassC, lowpassC);
+  float src_ext[order];
+  initialize_extension(ext, order, src, length, src_ext);
 
   if (ilength != order) {
     for (int i = 0, di = 0; i < ilength; i += 2, di++) {
       float reshi = 0.f, reslo = 0.f;
       for (int j = 0; j < order; j++) {
         int index = i + j;
-        float srcval = src[index < ilength? index : index % ilength];
+        float srcval = index < ilength? src[index] : src_ext[index - ilength];
         reshi += highpassC[j] * srcval;
         reslo += lowpassC[j] * srcval;
       }
@@ -252,7 +279,7 @@ void wavelet_apply_na(WaveletType type, int order,
         float reshi = 0.f, reslo = 0.f;
         for (int j = 0; j < 8; j++) {
           int index = i + j;
-          float srcval = src[index < 8? index : index % 8];
+          float srcval = index < 8? src[index] : src_ext[index - 8];
           reshi += highpassC[j] * srcval;
           reslo += lowpassC[j] * srcval;
         }
@@ -264,7 +291,7 @@ void wavelet_apply_na(WaveletType type, int order,
         float reshi = 0.f, reslo = 0.f;
         for (int j = 0; j < order; j++) {
           int index = i + j;
-          float srcval = src[index < order? index : index - order];
+          float srcval = index < order? src[index] : src_ext[index - order];
           reshi += highpassC[j] * srcval;
           reslo += lowpassC[j] * srcval;
         }
@@ -276,6 +303,7 @@ void wavelet_apply_na(WaveletType type, int order,
 }
 
 void stationary_wavelet_apply_na(WaveletType type, int order, int level,
+                                 ExtensionType ext,
                                  const float *__restrict src, size_t length,
                                  float *__restrict desthi,
                                  float *__restrict destlo) {
@@ -287,14 +315,16 @@ void stationary_wavelet_apply_na(WaveletType type, int order, int level,
   float highpassC[size], lowpassC[size];
   stationary_initialize_highpass_lowpass(type, size, level, highpassC,
                                          lowpassC);
-  int stride = 1 << (level - 1);
+  float src_ext[size];
+  initialize_extension(ext, size, src, length, src_ext);
 
+  int stride = 1 << (level - 1);
   if (ilength != size) {
     for (int i = 0; i < ilength; i++) {
       float reshi = 0.f, reslo = 0.f;
       for (int j = 0; j < size; j += stride) {
         int index = i + j;
-        float srcval = src[index < ilength? index : index - ilength];
+        float srcval = index < ilength? src[index] : src_ext[index - ilength];
         reshi += highpassC[j] * srcval;
         reslo += lowpassC[j] * srcval;
       }
@@ -308,7 +338,7 @@ void stationary_wavelet_apply_na(WaveletType type, int order, int level,
         float reshi = 0.f, reslo = 0.f;
         for (int j = 0; j < 8; j += stride) {
           int index = i + j;
-          float srcval = src[index < 8? index : index - 8];
+          float srcval = index < 8? src[index] : src_ext[index - 8];
           reshi += highpassC[j] * srcval;
           reslo += lowpassC[j] * srcval;
         }
@@ -320,7 +350,7 @@ void stationary_wavelet_apply_na(WaveletType type, int order, int level,
         float reshi = 0.f, reslo = 0.f;
         for (int j = 0; j < size; j += stride) {
           int index = i + j;
-          float srcval = src[index < size? index : index - size];
+          float srcval = index < size? src[index] : src_ext[index - size];
           reshi += highpassC[j] * srcval;
           reslo += lowpassC[j] * srcval;
         }
@@ -343,7 +373,7 @@ void stationary_wavelet_apply_na(WaveletType type, int order, int level,
 #define align_complement_f32(x) 0
 #endif
 
-static void wavelet_apply2(WaveletType type,
+static void wavelet_apply2(WaveletType type, ExtensionType ext,
                            const float *__restrict src, size_t length,
                            float *__restrict desthi,
                            float *__restrict destlo) {
@@ -352,13 +382,15 @@ static void wavelet_apply2(WaveletType type,
   assert(src && desthi && destlo);
 
   if (align_complement_f32(src) != 0 || length < 8) {
-    wavelet_apply_na(type, 2, src, length, desthi, destlo);
+    wavelet_apply_na(type, 2, ext, src, length, desthi, destlo);
     return;
   }
 
   int ilength = (int)length;
   DECLARE_PASSC(2);
   initialize_highpass_lowpass(type, 2, highpassC, lowpassC);
+  float src_ext[2];
+  initialize_extension(ext, 2, src, length, src_ext);
 
 #ifdef __AVX__
   highpassC[2] = highpassC[0];
@@ -429,11 +461,12 @@ static void wavelet_apply2(WaveletType type,
     destlo[di] = reslo;
   }
 #else  // #ifdef SIMD
-  wavelet_apply_na(type, 2, src, length, desthi, destlo);
+  wavelet_apply_na(type, 2, ext, src, length, desthi, destlo);
 #endif
 }
 
 static void stationary_wavelet_apply2(WaveletType type, int level,
+                                      ExtensionType ext,
                                       const float *__restrict src,
                                       size_t length,
                                       float *__restrict desthi,
@@ -452,7 +485,7 @@ static void stationary_wavelet_apply2(WaveletType type, int level,
       0
 #endif
   ) {
-    stationary_wavelet_apply_na(type, 2 / stride, level, src, length,
+    stationary_wavelet_apply_na(type, 2 / stride, level, ext, src, length,
                                 desthi, destlo);
     return;
   }
@@ -460,6 +493,8 @@ static void stationary_wavelet_apply2(WaveletType type, int level,
   int ilength = (int)length;
   DECLARE_PASSC(2);
   stationary_initialize_highpass_lowpass(type, 2, level, highpassC, lowpassC);
+  float src_ext[2];
+  initialize_extension(ext, 2, src, length, src_ext);
 
 #ifdef __AVX__
   int simd_end = ilength - 8;
@@ -520,7 +555,7 @@ static void stationary_wavelet_apply2(WaveletType type, int level,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 2; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -528,12 +563,12 @@ static void stationary_wavelet_apply2(WaveletType type, int level,
     destlo[i] = reslo;
   }
 #else  // #ifdef SIMD
-  stationary_wavelet_apply_na(type, 2 / stride, level, src, length,
+  stationary_wavelet_apply_na(type, 2 / stride, level, ext, src, length,
                               desthi, destlo);
 #endif
 }
 
-static void wavelet_apply4(WaveletType type,
+static void wavelet_apply4(WaveletType type, ExtensionType ext,
                            const float *__restrict src, size_t length,
                            float *__restrict desthi,
                            float *__restrict destlo) {
@@ -542,13 +577,15 @@ static void wavelet_apply4(WaveletType type,
   assert(src && desthi && destlo);
 
   if (align_complement_f32(src) != 0 || length < 8) {
-    wavelet_apply_na(type, 4, src, length, desthi, destlo);
+    wavelet_apply_na(type, 4, ext, src, length, desthi, destlo);
     return;
   }
 
   int ilength = (int)length;
   DECLARE_PASSC(4);
   initialize_highpass_lowpass(type, 4, highpassC, lowpassC);
+  float src_ext[4];
+  initialize_extension(ext, 4, src, length, src_ext);
 
 #ifdef __AVX__
   memcpy(&highpassC[4], &highpassC[0], sizeof(highpassC) / 2);
@@ -611,7 +648,7 @@ static void wavelet_apply4(WaveletType type,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 4; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index % ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -625,11 +662,12 @@ static void wavelet_apply4(WaveletType type,
   }
 #endif  // #ifdef __AVX__
 #else  // #ifdef SIMD
-  wavelet_apply_na(type, 4, src, length, desthi, destlo);
+  wavelet_apply_na(type, 4, ext, src, length, desthi, destlo);
 #endif
 }
 
 static void stationary_wavelet_apply4(WaveletType type, int level,
+                                      ExtensionType ext,
                                       const float *__restrict src,
                                       size_t length,
                                       float *__restrict desthi,
@@ -648,7 +686,7 @@ static void stationary_wavelet_apply4(WaveletType type, int level,
       0
 #endif
   ) {
-    stationary_wavelet_apply_na(type, 4 / stride, level, src, length,
+    stationary_wavelet_apply_na(type, 4 / stride, level, ext, src, length,
                                 desthi, destlo);
     return;
   }
@@ -656,6 +694,8 @@ static void stationary_wavelet_apply4(WaveletType type, int level,
   int ilength = (int)length;
   DECLARE_PASSC(4);
   stationary_initialize_highpass_lowpass(type, 4, level, highpassC, lowpassC);
+  float src_ext[4];
+  initialize_extension(ext, 4, src, length, src_ext);
 
 #ifdef __AVX__
   int simd_end = ilength - 10;
@@ -754,7 +794,7 @@ static void stationary_wavelet_apply4(WaveletType type, int level,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 4; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -762,12 +802,12 @@ static void stationary_wavelet_apply4(WaveletType type, int level,
     destlo[i] = reslo;
   }
 #else  // #ifdef SIMD
-  stationary_wavelet_apply_na(type, 4 / stride, level, src, length,
+  stationary_wavelet_apply_na(type, 4 / stride, level, ext, src, length,
                               desthi, destlo);
 #endif
 }
 
-static void wavelet_apply6(WaveletType type,
+static void wavelet_apply6(WaveletType type, ExtensionType ext,
                            const float *__restrict src, size_t length,
                            float *__restrict desthi,
                            float *__restrict destlo) {
@@ -776,13 +816,15 @@ static void wavelet_apply6(WaveletType type,
   assert(src && desthi && destlo);
 
   if (align_complement_f32(src) != 0 || length < 8) {
-    wavelet_apply_na(type, 6, src, length, desthi, destlo);
+    wavelet_apply_na(type, 6, ext, src, length, desthi, destlo);
     return;
   }
 
   int ilength = (int)length;
   DECLARE_PASSC(6);
   initialize_highpass_lowpass(type, 6, highpassC, lowpassC);
+  float src_ext[6];
+  initialize_extension(ext, 6, src, length, src_ext);
 
 #ifdef __AVX__
   highpassC[6] = 0.f;
@@ -842,7 +884,7 @@ static void wavelet_apply6(WaveletType type,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 6; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -856,11 +898,12 @@ static void wavelet_apply6(WaveletType type,
   }
 #endif  // #ifdef __AVX__
 #else  // #ifdef SIMD
-  wavelet_apply_na(type, 6, src, length, desthi, destlo);
+  wavelet_apply_na(type, 6, ext, src, length, desthi, destlo);
 #endif
 }
 
 static void stationary_wavelet_apply6(WaveletType type, int level,
+                                      ExtensionType ext,
                                       const float *__restrict src,
                                       size_t length,
                                       float *__restrict desthi,
@@ -871,7 +914,7 @@ static void stationary_wavelet_apply6(WaveletType type, int level,
 
   int stride = 1 << (level - 1);
   if (stride >= 4 || length < 8) {
-    stationary_wavelet_apply_na(type, 6 / stride, level, src, length,
+    stationary_wavelet_apply_na(type, 6 / stride, level, ext, src, length,
                                 desthi, destlo);
     return;
   }
@@ -879,6 +922,8 @@ static void stationary_wavelet_apply6(WaveletType type, int level,
   int ilength = (int)length;
   DECLARE_PASSC(6);
   stationary_initialize_highpass_lowpass(type, 6, level, highpassC, lowpassC);
+  float src_ext[6];
+  initialize_extension(ext, 6, src, length, src_ext);
 
 #ifdef __AVX__
   int simd_end = ilength - 8;
@@ -954,7 +999,7 @@ static void stationary_wavelet_apply6(WaveletType type, int level,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 6; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -962,12 +1007,12 @@ static void stationary_wavelet_apply6(WaveletType type, int level,
     destlo[i] = reslo;
   }
 #else  // #ifdef SIMD
-  stationary_wavelet_apply_na(type, 6 / stride, level, src, length,
+  stationary_wavelet_apply_na(type, 6 / stride, level, ext, src, length,
                               desthi, destlo);
 #endif
 }
 
-static void wavelet_apply8(WaveletType type,
+static void wavelet_apply8(WaveletType type, ExtensionType ext,
                            const float *__restrict src, size_t length,
                            float *__restrict desthi,
                            float *__restrict destlo) {
@@ -975,13 +1020,15 @@ static void wavelet_apply8(WaveletType type,
   check_length(length);
   assert(src && desthi && destlo);
   if (align_complement_f32(src) != 0 || length < 8) {
-    wavelet_apply_na(type, 8, src, length, desthi, destlo);
+    wavelet_apply_na(type, 8, ext, src, length, desthi, destlo);
     return;
   }
 
   int ilength = (int)length;
   DECLARE_PASSC(8);
   initialize_highpass_lowpass(type, 8, highpassC, lowpassC);
+  float src_ext[8];
+  initialize_extension(ext, 8, src, length, src_ext);
 
 #ifdef __AVX__
   const __m256 hpvec = _mm256_load_ps(highpassC);
@@ -1031,7 +1078,7 @@ static void wavelet_apply8(WaveletType type,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 8; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -1045,11 +1092,12 @@ static void wavelet_apply8(WaveletType type,
   }
 #endif  // #ifdef __AVX__
 #else  // #ifdef SIMD
-  wavelet_apply_na(type, 8, src, length, desthi, destlo);
+  wavelet_apply_na(type, 8, ext, src, length, desthi, destlo);
 #endif
 }
 
 static void stationary_wavelet_apply8(WaveletType type, int level,
+                                      ExtensionType ext,
                                       const float *__restrict src,
                                       size_t length,
                                       float *__restrict desthi,
@@ -1060,7 +1108,7 @@ static void stationary_wavelet_apply8(WaveletType type, int level,
 
   int stride = 1 << (level - 1);
   if (stride >= 4 || length < 8) {
-    stationary_wavelet_apply_na(type, 8 / stride, level, src, length,
+    stationary_wavelet_apply_na(type, 8 / stride, level, ext, src, length,
                                 desthi, destlo);
     return;
   }
@@ -1068,6 +1116,8 @@ static void stationary_wavelet_apply8(WaveletType type, int level,
   int ilength = (int)length;
   DECLARE_PASSC(8);
   stationary_initialize_highpass_lowpass(type, 8, level, highpassC, lowpassC);
+  float src_ext[8];
+  initialize_extension(ext, 8, src, length, src_ext);
 
 #ifdef __AVX__
   int simd_end = ilength - 8;
@@ -1122,7 +1172,7 @@ static void stationary_wavelet_apply8(WaveletType type, int level,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 8; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -1130,12 +1180,12 @@ static void stationary_wavelet_apply8(WaveletType type, int level,
     destlo[i] = reslo;
   }
 #else  // #ifdef SIMD
-  stationary_wavelet_apply_na(type, 8 / stride, level, src, length,
+  stationary_wavelet_apply_na(type, 8 / stride, level, ext, src, length,
                               desthi, destlo);
 #endif
 }
 
-static void wavelet_apply12(WaveletType type,
+static void wavelet_apply12(WaveletType type, ExtensionType ext,
                             const float *__restrict src, size_t length,
                             float *__restrict desthi,
                             float *__restrict destlo) {
@@ -1150,13 +1200,15 @@ static void wavelet_apply12(WaveletType type,
       length < 12
 #endif
   ) {
-    wavelet_apply_na(type, 12, src, length, desthi, destlo);
+    wavelet_apply_na(type, 12, ext, src, length, desthi, destlo);
     return;
   }
 
   int ilength = (int)length;
   DECLARE_PASSC(12);
   initialize_highpass_lowpass(type, 12, highpassC, lowpassC);
+  float src_ext[12];
+  initialize_extension(ext, 12, src, length, src_ext);
 
 #ifdef __AVX__
   highpassC[12] = 0.f;
@@ -1230,7 +1282,7 @@ static void wavelet_apply12(WaveletType type,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 12; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -1244,11 +1296,12 @@ static void wavelet_apply12(WaveletType type,
   }
 #endif  // #ifdef __AVX__
 #else  // #ifdef SIMD
-  wavelet_apply_na(type, 12, src, length, desthi, destlo);
+  wavelet_apply_na(type, 12, ext, src, length, desthi, destlo);
 #endif
 }
 
 static void stationary_wavelet_apply12(WaveletType type, int level,
+                                       ExtensionType ext,
                                        const float *__restrict src,
                                        size_t length,
                                        float *__restrict desthi,
@@ -1267,7 +1320,7 @@ static void stationary_wavelet_apply12(WaveletType type, int level,
       0
 #endif
   ) {
-    stationary_wavelet_apply_na(type, 12 / stride, level, src, length,
+    stationary_wavelet_apply_na(type, 12 / stride, level, ext, src, length,
                                 desthi, destlo);
     return;
   }
@@ -1275,6 +1328,8 @@ static void stationary_wavelet_apply12(WaveletType type, int level,
   int ilength = (int)length;
   DECLARE_PASSC(12);
   stationary_initialize_highpass_lowpass(type, 12, level, highpassC, lowpassC);
+  float src_ext[12];
+  initialize_extension(ext, 12, src, length, src_ext);
 
 #ifdef __AVX__
   int simd_end = ilength - 16;
@@ -1356,7 +1411,7 @@ static void stationary_wavelet_apply12(WaveletType type, int level,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 12; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -1364,12 +1419,12 @@ static void stationary_wavelet_apply12(WaveletType type, int level,
     destlo[i] = reslo;
   }
 #else  // #ifdef SIMD
-  stationary_wavelet_apply_na(type, 12 / stride, level, src, length,
+  stationary_wavelet_apply_na(type, 12 / stride, level, ext, src, length,
                               desthi, destlo);
 #endif
 }
 
-static void wavelet_apply16(WaveletType type,
+static void wavelet_apply16(WaveletType type, ExtensionType ext,
                             const float *__restrict src, size_t length,
                             float *__restrict desthi,
                             float *__restrict destlo) {
@@ -1378,13 +1433,15 @@ static void wavelet_apply16(WaveletType type,
   assert(src && desthi && destlo);
 
   if (align_complement_f32(src) != 0 || length < 16) {
-    wavelet_apply_na(type, 16, src, length, desthi, destlo);
+    wavelet_apply_na(type, 16, ext, src, length, desthi, destlo);
     return;
   }
 
   int ilength = (int)length;
   DECLARE_PASSC(16);
   initialize_highpass_lowpass(type, 16, highpassC, lowpassC);
+  float src_ext[16];
+  initialize_extension(ext, 16, src, length, src_ext);
 
 #ifdef __AVX__
   const __m256 hpvec1 = _mm256_load_ps(highpassC);
@@ -1454,7 +1511,7 @@ static void wavelet_apply16(WaveletType type,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 16; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -1468,11 +1525,12 @@ static void wavelet_apply16(WaveletType type,
   }
 #endif  // #ifdef __AVX__
 #else  // #ifdef SIMD
-  wavelet_apply_na(type, 16, src, length, desthi, destlo);
+  wavelet_apply_na(type, 16, ext, src, length, desthi, destlo);
 #endif
 }
 
 static void stationary_wavelet_apply16(WaveletType type, int level,
+                                       ExtensionType ext,
                                        const float *__restrict src,
                                        size_t length,
                                        float *__restrict desthi,
@@ -1483,7 +1541,7 @@ static void stationary_wavelet_apply16(WaveletType type, int level,
 
   int stride = 1 << (level - 1);
   if (stride >= 4 || length < 16) {
-    stationary_wavelet_apply_na(type, 16 / stride, level, src, length,
+    stationary_wavelet_apply_na(type, 16 / stride, level, ext, src, length,
                                 desthi, destlo);
     return;
   }
@@ -1491,6 +1549,8 @@ static void stationary_wavelet_apply16(WaveletType type, int level,
   int ilength = (int)length;
   DECLARE_PASSC(16);
   stationary_initialize_highpass_lowpass(type, 16, level, highpassC, lowpassC);
+  float src_ext[16];
+  initialize_extension(ext, 16, src, length, src_ext);
 
 #ifdef __AVX__
   int simd_end = ilength - 16;
@@ -1572,7 +1632,7 @@ static void stationary_wavelet_apply16(WaveletType type, int level,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 16; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -1580,18 +1640,17 @@ static void stationary_wavelet_apply16(WaveletType type, int level,
     destlo[i] = reslo;
   }
 #else  // #ifdef SIMD
-  stationary_wavelet_apply_na(type, 16 / stride, level, src, length,
+  stationary_wavelet_apply_na(type, 16 / stride, level, ext, src, length,
                               desthi, destlo);
 #endif
 }
 
 static void stationary_wavelet_applyN_core(const float* highpassC,
-                                           const float* lowpassC,
-                                           int size,
-                                           const float *__restrict src,
+                                           const float* lowpassC, int size,
+                                           const float *restrict src,
                                            size_t length,
-                                           float *__restrict desthi,
-                                           float *__restrict destlo) {
+                                           float *restrict desthi,
+                                           float *restrict destlo) {
 #ifdef __AVX__
   assert(size % 16 == 0);
   for (int i = 0; i < (int)length - size + 1; i++) {
@@ -1656,6 +1715,7 @@ static void stationary_wavelet_applyN_core(const float* highpassC,
 }
 
 static void stationary_wavelet_apply24(WaveletType type, int level,
+                                       ExtensionType ext,
                                        const float *__restrict src,
                                        size_t length,
                                        float *__restrict desthi,
@@ -1674,7 +1734,7 @@ static void stationary_wavelet_apply24(WaveletType type, int level,
       0
 #endif
   ) {
-    stationary_wavelet_apply_na(type, 24 / stride, level, src, length,
+    stationary_wavelet_apply_na(type, 24 / stride, level, ext, src, length,
                                 desthi, destlo);
     return;
   }
@@ -1682,6 +1742,8 @@ static void stationary_wavelet_apply24(WaveletType type, int level,
   int ilength = (int)length;
   DECLARE_PASSC(24);
   stationary_initialize_highpass_lowpass(type, 24, level, highpassC, lowpassC);
+  float src_ext[24];
+  initialize_extension(ext, 24, src, length, src_ext);
 
   int simd_end = ilength - 23;
 #ifdef __AVX__
@@ -1729,7 +1791,7 @@ static void stationary_wavelet_apply24(WaveletType type, int level,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 24; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -1737,12 +1799,13 @@ static void stationary_wavelet_apply24(WaveletType type, int level,
     destlo[i] = reslo;
   }
 #else  // #ifdef SIMD
-  stationary_wavelet_apply_na(type, 24 / stride, level, src, length,
+  stationary_wavelet_apply_na(type, 24 / stride, level, ext, src, length,
                               desthi, destlo);
 #endif
 }
 
 static void stationary_wavelet_applyN(WaveletType type, int size, int level,
+                                      ExtensionType ext,
                                       const float *__restrict src,
                                       size_t length,
                                       float *__restrict desthi,
@@ -1753,7 +1816,7 @@ static void stationary_wavelet_applyN(WaveletType type, int size, int level,
 
   int stride = 1 << (level - 1);
   if (stride >= 4 || length < (size_t)size) {
-    stationary_wavelet_apply_na(type, size / stride, level, src, length,
+    stationary_wavelet_apply_na(type, size / stride, level, ext, src, length,
                                 desthi, destlo);
     return;
   }
@@ -1762,6 +1825,8 @@ static void stationary_wavelet_applyN(WaveletType type, int size, int level,
   DECLARE_PASSC(size);
   stationary_initialize_highpass_lowpass(type, size, level,
                                          highpassC, lowpassC);
+  float src_ext[size];
+  initialize_extension(ext, size, src, length, src_ext);
 
   stationary_wavelet_applyN_core(highpassC, lowpassC, size, src, length,
                                  desthi, destlo);
@@ -1770,7 +1835,7 @@ static void stationary_wavelet_applyN(WaveletType type, int size, int level,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < size; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index - ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -1778,69 +1843,70 @@ static void stationary_wavelet_applyN(WaveletType type, int size, int level,
     destlo[i] = reslo;
   }
 #else  // #ifdef SIMD
-  stationary_wavelet_apply_na(type, size / stride, level, src, length,
+  stationary_wavelet_apply_na(type, size / stride, level, ext, src, length,
                               desthi, destlo);
 #endif
 }
 
-void wavelet_apply(WaveletType type, int order,
+void wavelet_apply(WaveletType type, int order, ExtensionType ext,
                    const float *__restrict src, size_t length,
                    float *__restrict desthi, float *__restrict destlo) {
   switch (order) {
     case 2:
-      wavelet_apply2(type, src, length, desthi, destlo);
+      wavelet_apply2(type, ext, src, length, desthi, destlo);
       break;
     case 4:
-      wavelet_apply4(type, src, length, desthi, destlo);
+      wavelet_apply4(type, ext, src, length, desthi, destlo);
       break;
     case 6:
-      wavelet_apply6(type, src, length, desthi, destlo);
+      wavelet_apply6(type, ext, src, length, desthi, destlo);
       break;
     case 8:
-      wavelet_apply8(type, src, length, desthi, destlo);
+      wavelet_apply8(type, ext, src, length, desthi, destlo);
       break;
     case 12:
-      wavelet_apply12(type, src, length, desthi, destlo);
+      wavelet_apply12(type, ext, src, length, desthi, destlo);
       break;
     case 16:
-      wavelet_apply16(type, src, length, desthi, destlo);
+      wavelet_apply16(type, ext, src, length, desthi, destlo);
       break;
     default:
       // TODO(v.markovtsev): implement universal SIMD version
-      wavelet_apply_na(type, order, src, length, desthi, destlo);
+      wavelet_apply_na(type, order, ext, src, length, desthi, destlo);
       break;
   }
 }
 
 void stationary_wavelet_apply(WaveletType type, int order, int level,
+                              ExtensionType ext,
                               const float *__restrict src, size_t length,
                               float *__restrict desthi,
                               float *__restrict destlo) {
   int size = order * (1 << (level - 1));
   switch (size) {
     case 2:
-      stationary_wavelet_apply2(type, level, src, length, desthi, destlo);
+      stationary_wavelet_apply2(type, level, ext, src, length, desthi, destlo);
       break;
     case 4:
-      stationary_wavelet_apply4(type, level, src, length, desthi, destlo);
+      stationary_wavelet_apply4(type, level, ext, src, length, desthi, destlo);
       break;
     case 6:
-      stationary_wavelet_apply6(type, level, src, length, desthi, destlo);
+      stationary_wavelet_apply6(type, level, ext, src, length, desthi, destlo);
       break;
     case 8:
-      stationary_wavelet_apply8(type, level, src, length, desthi, destlo);
+      stationary_wavelet_apply8(type, level, ext, src, length, desthi, destlo);
       break;
     case 12:
-      stationary_wavelet_apply12(type, level, src, length, desthi, destlo);
+      stationary_wavelet_apply12(type, level, ext, src, length, desthi, destlo);
       break;
     case 16:
-      stationary_wavelet_apply16(type, level, src, length, desthi, destlo);
+      stationary_wavelet_apply16(type, level, ext, src, length, desthi, destlo);
       break;
     case 24:
-      stationary_wavelet_apply24(type, level, src, length, desthi, destlo);
+      stationary_wavelet_apply24(type, level, ext, src, length, desthi, destlo);
       break;
     default:
-      stationary_wavelet_applyN(type, size, level, src, length,
+      stationary_wavelet_applyN(type, size, level, ext, src, length,
                                 desthi, destlo);
       break;
   }

@@ -73,8 +73,8 @@ TEST(Wavelet, wavelet_apply_na) {
   for (int i = 0; i < length; i++) {
     array[i] = i;
   }
-  wavelet_apply_na(WAVELET_TYPE_DAUBECHIES, 8, array, length,
-                   desthi, destlo);
+  wavelet_apply_na(WAVELET_TYPE_DAUBECHIES, 8, EXTENSION_TYPE_PERIODIC, array,
+                   length, desthi, destlo);
   const float valid_destlo[] = { 1.42184071797210, 4.25026784271829,
       7.07869496746448, 9.90712209221067, 12.7355492169569, 15.5639763417030,
       18.3924034664492, 21.2208305911954, 24.0492577159416, 26.8776848406878,
@@ -134,10 +134,12 @@ TEST(Wavelet, stationary_wavelet_apply_na) {
       58.7895581326311, 46.7708694321525, 31.0673425771182, 16.9214616227404,
       9.00063853315767, 5.73072526035035 };
 
-  stationary_wavelet_apply_na(WAVELET_TYPE_DAUBECHIES, 8, 1, array, length,
+  stationary_wavelet_apply_na(WAVELET_TYPE_DAUBECHIES, 8, 1,
+                              EXTENSION_TYPE_PERIODIC, array, length,
                               desthi1, destlo);
   memcpy(array, destlo, sizeof(array));
-  stationary_wavelet_apply_na(WAVELET_TYPE_DAUBECHIES, 8, 2, array, length,
+  stationary_wavelet_apply_na(WAVELET_TYPE_DAUBECHIES, 8, 2,
+                              EXTENSION_TYPE_PERIODIC, array, length,
                               desthi2, destlo);
    for (int i = 0; i < length; i++) {
      ASSERT_NEAR(desthi1[i], valid_desthi1[i], 1e-5) << i;
@@ -147,7 +149,7 @@ TEST(Wavelet, stationary_wavelet_apply_na) {
 }
 
 class WaveletTest : public ::testing::TestWithParam<
-    std::tuple<WaveletType, int>> {
+    std::tuple<WaveletType, int, ExtensionType>> {
  public:
   typedef std::unique_ptr<float, decltype(&std::free)> FloatPtr;
 
@@ -178,7 +180,7 @@ class WaveletTest : public ::testing::TestWithParam<
 };
 
 class StationaryWaveletTest : public ::testing::TestWithParam<
-    std::tuple<WaveletType, int, int>> {
+    std::tuple<WaveletType, int, int, ExtensionType>> {
 public:
  typedef std::unique_ptr<float, decltype(&std::free)> FloatPtr;
 
@@ -206,10 +208,12 @@ public:
 
 TEST_P(WaveletTest, wavelet_apply) {
   wavelet_apply(std::get<0>(GetParam()), std::get<1>(GetParam()),
-                prep_.get(), length_, desthi_.get(), destlo_.get());
+                std::get<2>(GetParam()), prep_.get(), length_,
+                desthi_.get(), destlo_.get());
   float validdesthi[length_ / 2], validdestlo[length_ / 2];
   wavelet_apply_na(std::get<0>(GetParam()), std::get<1>(GetParam()),
-                   array_.get(), length_, validdesthi, validdestlo);
+                   std::get<2>(GetParam()), array_.get(), length_,
+                   validdesthi, validdestlo);
   for (size_t i = 0; i < length_ / 2; i++) {
     ASSERT_EQF(validdesthi[i], desthi_.get()[i]) << "i = " << i;
     ASSERT_EQF(validdestlo[i], destlo_.get()[i]) << "i = " << i;
@@ -218,11 +222,11 @@ TEST_P(WaveletTest, wavelet_apply) {
 
 TEST_P(StationaryWaveletTest, stationary_wavelet_apply) {
   stationary_wavelet_apply(std::get<0>(GetParam()), std::get<1>(GetParam()),
-                            std::get<2>(GetParam()),
+                           std::get<2>(GetParam()), std::get<3>(GetParam()),
                            array_.get(), length_, desthi_.get(), destlo_.get());
   float validdesthi[length_], validdestlo[length_];
   stationary_wavelet_apply_na(std::get<0>(GetParam()), std::get<1>(GetParam()),
-                              std::get<2>(GetParam()),
+                              std::get<2>(GetParam()), std::get<3>(GetParam()),
                               array_.get(), length_, validdesthi, validdestlo);
   for (size_t i = 0; i < length_; i++) {
     ASSERT_EQF(validdesthi[i], desthi_.get()[i]) << "i = " << i;
@@ -234,14 +238,18 @@ INSTANTIATE_TEST_CASE_P(
     DaubechiesAndSymlets, WaveletTest,
     ::testing::Combine(
         ::testing::Values(WAVELET_TYPE_DAUBECHIES, WAVELET_TYPE_SYMLET),
-        ::testing::Values(2, 4, 6, 8, 12, 16)
+        ::testing::Values(2, 4, 6, 8, 12, 16),
+        ::testing::Values(EXTENSION_TYPE_PERIODIC, EXTENSION_TYPE_MIRROR,
+                          EXTENSION_TYPE_CONSTANT, EXTENSION_TYPE_ZERO)
     ));
 
 INSTANTIATE_TEST_CASE_P(
     Coiflets, WaveletTest,
     ::testing::Combine(
         ::testing::Values(WAVELET_TYPE_COIFLET),
-        ::testing::Values(6, 12)
+        ::testing::Values(6, 12),
+        ::testing::Values(EXTENSION_TYPE_PERIODIC, EXTENSION_TYPE_MIRROR,
+                          EXTENSION_TYPE_CONSTANT, EXTENSION_TYPE_ZERO)
     ));
 
 INSTANTIATE_TEST_CASE_P(
@@ -249,7 +257,9 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::Combine(
         ::testing::Values(WAVELET_TYPE_DAUBECHIES, WAVELET_TYPE_SYMLET),
         ::testing::Values(2, 4, 6, 8, 12, 16),
-        ::testing::Values(1, 2, 3, 4)
+        ::testing::Values(1, 2, 3, 4),
+        ::testing::Values(EXTENSION_TYPE_PERIODIC, EXTENSION_TYPE_MIRROR,
+                          EXTENSION_TYPE_CONSTANT, EXTENSION_TYPE_ZERO)
     ));
 
 INSTANTIATE_TEST_CASE_P(
@@ -257,7 +267,9 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::Combine(
         ::testing::Values(WAVELET_TYPE_COIFLET),
         ::testing::Values(6, 12),
-        ::testing::Values(1, 2)
+        ::testing::Values(1, 2),
+        ::testing::Values(EXTENSION_TYPE_PERIODIC, EXTENSION_TYPE_MIRROR,
+                          EXTENSION_TYPE_CONSTANT, EXTENSION_TYPE_ZERO)
     ));
 
 #ifdef BENCHMARK

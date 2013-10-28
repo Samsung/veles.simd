@@ -23,6 +23,17 @@ typedef enum {
   WAVELET_TYPE_SYMLET
 } WaveletType;
 
+typedef enum {
+  /// @brief 1 2 3 | 1 2 3
+  EXTENSION_TYPE_PERIODIC,
+  /// @brief 1 2 3 | 3 2 1
+  EXTENSION_TYPE_MIRROR,
+  /// @brief 1 2 3 | 3 3 3
+  EXTENSION_TYPE_CONSTANT,
+  /// @brief 1 2 3 | 0 0 0
+  EXTENSION_TYPE_ZERO,
+} ExtensionType;
+
 SIMD_API_END
 
 
