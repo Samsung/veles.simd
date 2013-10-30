@@ -225,7 +225,7 @@ INLINE NOTNULL(4, 5) void stationary_initialize_highpass_lowpass(
   }
 }
 
-INLINE NOTNULL(3, 4) void initialize_extension(ExtensionType ext,
+INLINE NOTNULL(3, 5) void initialize_extension(ExtensionType ext,
                                                size_t extLength,
                                                const float *restrict src,
                                                size_t length,

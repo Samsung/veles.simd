@@ -98,7 +98,7 @@ ConvolutionOverlapSaveHandle convolve_overlap_save_initialize(
   L = (1 << log);
   handle.H = mallocf(L + 2);
   assert(handle.H);
-  memsetf(handle.H + M, L - M, 0.f);
+  memsetf(handle.H + M, 0.f, L - M);
   handle.L = malloc(sizeof(L));
   *handle.L = L;
 
@@ -146,7 +146,7 @@ void convolve_overlap_save(ConvolutionOverlapSaveHandle handle,
   } else {
     memcpy(handle.fft_boiler_plate, h, handle.h_length * sizeof(float));
   }
-  memsetf(handle.fft_boiler_plate + handle.h_length, L - handle.h_length, 0);
+  memsetf(handle.fft_boiler_plate + handle.h_length, 0.f, L - handle.h_length);
 
   // H = FFT(paddedH, L)
   fftf_calc(handle.fft_plan);
@@ -166,10 +166,10 @@ void convolve_overlap_save(ConvolutionOverlapSaveHandle handle,
         int cl = handle.x_length - i + M - 1;
         memcpy(handle.fft_boiler_plate, x + i - (M - 1),
                cl * sizeof(float));
-        memsetf(handle.fft_boiler_plate + cl, L - cl, 0.f);
+        memsetf(handle.fft_boiler_plate + cl, 0.f, L - cl);
       }
     } else {
-      memsetf(handle.fft_boiler_plate, M - 1, 0.f);
+      memsetf(handle.fft_boiler_plate, 0.f, M - 1);
       memcpy(handle.fft_boiler_plate + M - 1, x, step * sizeof(float));
     }
     fftf_calc(handle.fft_plan);
@@ -229,9 +229,9 @@ ConvolutionFFTHandle convolve_fft_initialize(size_t xLength, size_t hLength) {
   // Do zero padding of x and h
   // Allocate 2 extra samples for the M/2 complex number.
   float *X = mallocf(M + 2);
-  memsetf(X + xLength, M + 2 - xLength, 0.f);
+  memsetf(X + xLength, 0.f, M + 2 - xLength);
   float *H = mallocf(M + 2);
-  memsetf(H + hLength, M + 2 - hLength, 0.f);
+  memsetf(H + hLength, 0.f, M + 2 - hLength);
 
   handle.inputs = malloc(2 * sizeof(float *));
   handle.inputs[0] = X;

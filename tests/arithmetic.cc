@@ -284,7 +284,7 @@ TEST(Arithmetic, int16_to_float) {
   float verif[30];
   int16_to_float_na(&ar[1], 29, verif);
   ASSERT_EQ(0, memcmp(&res[1], verif, 29 * sizeof(res[0])));
-  memsetf(res, 30, 0.f);
+  memsetf(res, 0.f, 30);
   int16_to_float(&ar[0], 30, &res[0]);
   int16_to_float_na(&ar[0], 30, verif);
   ASSERT_EQ(0, memcmp(&res[0], verif, 30 * sizeof(res[0])));

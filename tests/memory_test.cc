@@ -82,7 +82,7 @@ TEST(Memory, mallocf) {
 
 TEST(Memory, memsetf) {
   float ptr[102] __attribute__ ((aligned (32)));  // NOLINT(whitespace/parens)
-  memsetf(&ptr[3], 99, 3.0f);
+  memsetf(&ptr[3], 3.0f, 99);
   for (int i = 3; i < 99; i++) {
     ASSERT_EQ(3.0f, ptr[i]);
   }
@@ -90,7 +90,7 @@ TEST(Memory, memsetf) {
 
 TEST(Memory, zeropadding) {
   float orig[100];
-  memsetf(orig, 100, 1.0f);
+  memsetf(orig, 1.0f, 100);
   size_t nl;
   auto ptr = zeropadding(orig, 100, &nl);
 #ifdef __AVX__

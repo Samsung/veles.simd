@@ -71,16 +71,16 @@ float *mallocf(size_t length) MALLOC;
 
 /// @brief Sets the contents of a floating point array to the specified value.
 /// @param ptr The array of floating point numbers.
-/// @param length The length of the array (in float-s, not in bytes).
 /// @param value The value to set for all of the array content.
+/// @param length The length of the array (in float-s, not in bytes).
 /// @details Here is an example:
 /// @code
 /// float array[100];
-/// memsetf(array, 100, 1.0f);
+/// memsetf(array, 1.0f, 100);
 /// @endcode
 /// So array[i] becomes equal to 1.0f, i = 0..99.
 /// @note This function tries to use SIMD instructions available on the host.
-void memsetf(float *ptr, size_t length, float value) NOTNULL(1);
+void memsetf(float *ptr, float value, size_t length) NOTNULL(1);
 
 /// @brief Allocates a new aligned memory block of size
 /// (nearest power of 2 greater than length) * 2, the contents in

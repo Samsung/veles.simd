@@ -64,7 +64,7 @@ float *mallocf(size_t length) {
   return malloc_aligned(length * sizeof(float));
 }
 
-void memsetf(float *ptr, size_t length, float value) {
+void memsetf(float *ptr, float value, size_t length) {
 #ifdef __AVX__
 
   __m256 fillvec = _mm256_set1_ps(value);
@@ -112,7 +112,7 @@ float *zeropaddingex(const float *ptr, size_t length, size_t *newLength,
   *newLength = nl;
   float *ret = mallocf(nl + additionalLength);
   memcpy(ret, ptr, length * sizeof(float));
-  memsetf(ret + length, nl - length, 0.f);
+  memsetf(ret + length, 0.f, nl - length);
   return ret;
 }
 
