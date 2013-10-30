@@ -27,8 +27,9 @@ SIMD_API_BEGIN
 /// @param height The height of the plane.
 /// @param dst The resulting floating point array.
 /// @param dst_stride The stride of dst.
-void normalize2D(int simd, const uint8_t* src, int src_stride,
-                 int width, int height, float* dst, int dst_stride);
+void normalize2D(int simd, const uint8_t *src, int src_stride,
+                 int width, int height, float *dst, int dst_stride)
+    NOTNULL(2, 6);
 
 /// @brief Finds the minimum and the maximum value in the specified array.
 /// @param simd Value indicating whether to use available SIMD acceleration.
@@ -36,10 +37,13 @@ void normalize2D(int simd, const uint8_t* src, int src_stride,
 /// @param src_stride The stride (the actual width) of the plane.
 /// @param width The width of the plane.
 /// @param height The height of the plane.
-/// @param min The pointer to the resulting minimum.
-/// @param max The pointer to the resulting maximum.
-void minmax2D(int simd, const uint8_t* src, int src_stride,
-              int width, int height, uint8_t* min, uint8_t* max);
+/// @param min The pointer to the resulting minimum. If NULL, minimum is not
+/// calculated.
+/// @param max The pointer to the resulting maximum. If NULL, maximum is not
+/// calculated.
+void minmax2D(int simd, const uint8_t *src, int src_stride,
+              int width, int height, uint8_t *min, uint8_t *max)
+    NOTNULL(2);
 
 /// @brief Performs the plane normalization [min, max] -> [-1, 1].
 /// @param simd Value indicating whether to use available SIMD acceleration.
@@ -52,8 +56,20 @@ void minmax2D(int simd, const uint8_t* src, int src_stride,
 /// @param dst The resulting floating point array.
 /// @param dst_stride The stride of dst.
 void normalize2D_minmax(int simd, uint8_t min, uint8_t max,
-                        const uint8_t* src, int src_stride,
-                        int width, int height, float* dst, int dst_stride);
+                        const uint8_t *src, int src_stride,
+                        int width, int height, float *dst, int dst_stride)
+    NOTNULL(4, 8);
+
+/// @brief Finds the minimum and the maximum value in the specified array.
+/// @param simd Value indicating whether to use available SIMD acceleration.
+/// @param src The source floating point array.
+/// @param length The size of the array (in float-s, not in bytes).
+/// @param min The pointer to the resulting minimum. If NULL, minimum is not
+/// calculated.
+/// @param max The pointer to the resulting maximum. If NULL, maximum is not
+/// calculated.
+void minmax1D(int simd, const float *src, int length, float *min,
+              float *max) NOTNULL(2);
 
 SIMD_API_END
 

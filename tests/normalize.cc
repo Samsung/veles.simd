@@ -12,16 +12,17 @@
 
 
 #include <simd/normalize.h>
+#include <simd/memory.h>
 #include <gtest/gtest.h>
 
-class NormalizeTest : public ::testing::TestWithParam<bool> {
+class SimdTest : public ::testing::TestWithParam<bool> {
  protected:
   bool is_simd() {
     return GetParam();
   }
 };
 
-TEST_P(NormalizeTest, Normalization) {
+TEST_P(SimdTest, normalize2D) {
   uint8_t array[128 * 100];
   memset(array, 1, sizeof(array));
   array[0] = 127;
@@ -43,6 +44,24 @@ TEST_P(NormalizeTest, Normalization) {
   ASSERT_FLOAT_EQ(2.f * (3 - 1) / 251 - 1, res[121]);
 }
 
-INSTANTIATE_TEST_CASE_P(NormalizeTests, NormalizeTest, ::testing::Bool());
+TEST_P(SimdTest, minmax1D) {
+  const int length = 100;
+  float array[length];
+  memsetf(array, 1.f, length);
+  array[0] = 127;
+  array[1] = 15;
+  array[10] = 252;
+  array[89] = 31;
+  array[21] = 3;
+  float min, max;
+  minmax1D(is_simd(), array, length, &min, &max);
+  EXPECT_FLOAT_EQ(252, max);
+  EXPECT_FLOAT_EQ(1, min);
+  minmax1D(is_simd(), array, length, nullptr, nullptr);
+  minmax1D(is_simd(), array, length, nullptr, &max);
+  EXPECT_FLOAT_EQ(252, max);
+}
+
+INSTANTIATE_TEST_CASE_P(NormalizeTests, SimdTest, ::testing::Bool());
 
 #include "tests/google/src/gtest_main.cc"

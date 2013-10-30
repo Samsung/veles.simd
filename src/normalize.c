@@ -10,8 +10,10 @@
  *  Copyright 2013 Samsung R&D Institute Russia
  */
 
+#define IMPLEMENTATION
 #include "inc/simd/normalize.h"
 #include <assert.h>
+#include <float.h>
 #ifdef __SSE2__
 #include <immintrin.h>
 #elif defined(__ARM_NEON__)
@@ -26,7 +28,7 @@ static void normalize2D_minmax_neon(uint8_t min, uint8_t max,
                                     int width, int height,
                                     float* dst, int dst_stride) {
   if (max == min) {
-    memsetf(dst, width * height, 0);
+    memsetf(dst, 0, width * height);
     return;
   }
   const uint8x16_t min_vec = vdupq_n_u8(min);
@@ -91,14 +93,19 @@ static void minmax2D_neon(const uint8_t* src, int src_stride,
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width - 15; x += 16) {
       uint8x16_t vec = vld1q_u8(src + y * src_stride + x);
-      min_vec = vminq_u8(vec, min_vec);
-      max_vec = vmaxq_u8(vec, max_vec);
+      if (min_ptr) {
+        min_vec = vminq_u8(vec, min_vec);
+      }
+      if (max_ptr) {
+        max_vec = vmaxq_u8(vec, max_vec);
+      }
     }
     for (int x = width & ~0xF; x < width; x++) {
       float val = src[y * src_stride + x];
-      if (val < min) {
+      if (min_ptr && val < min) {
         min = val;
-      } else if (val > max) {
+      }
+      if (max_ptr && val > max) {
         max = val;
       }
     }
@@ -106,21 +113,80 @@ static void minmax2D_neon(const uint8_t* src, int src_stride,
   // Gather the results
   uint8_t min_arr[16] __attribute__((aligned(64))),
       max_arr[16] __attribute__((aligned(64)));
-  vst1q_u8(min_arr, min_vec);
-  vst1q_u8(max_arr, max_vec);
+  if (min_ptr) {
+    vst1q_u8(min_arr, min_vec);
+  }
+  if (max_ptr) {
+    vst1q_u8(max_arr, max_vec);
+  }
   for (int i = 0; i < 16; i++) {
     float val = min_arr[i];
-    if (val < min) {
+    if (min_ptr && val < min) {
       min = val;
     }
     val = max_arr[i];
-    if (val > max) {
+    if (max_ptr && val > max) {
       max = val;
     }
   }
 
-  *min_ptr = min;
-  *max_ptr = max;
+  if (min_ptr) {
+    *min_ptr = min;
+  }
+  if (max_ptr) {
+    *max_ptr = max;
+  }
+}
+
+static void minmax1D_neon(const float* src, int length,
+                          float* min_ptr, float* max_ptr) {
+  float min = src[0], max = src[0];
+  float32x4_t min_vec = vdupq_n_f32(min), max_vec = vdupq_n_f32(max);
+  for (int i = 0; i < length - 3; i += 4) {
+    float32x4_t vec = vld1q_f32(src + i);
+    if (min_ptr) {
+      min_vec = vminq_f32(vec, min_vec);
+    }
+    if (max_ptr) {
+      max_vec = vmaxq_f32(vec, max_vec);
+    }
+  }
+  for (int i = length & ~0x3; i < length; i++) {
+    float val = src[i];
+    if (min_ptr && val < min) {
+      min = val;
+    }
+    if (max_ptr && val > max) {
+      max = val;
+    }
+  }
+
+  // Gather the results
+  float min_arr[4] __attribute__((aligned(64))),
+      max_arr[4] __attribute__((aligned(64)));
+  if (min_ptr) {
+    vst1q_f32(min_arr, min_vec);
+  }
+  if (max_ptr) {
+    vst1q_f32(max_arr, max_vec);
+  }
+  for (int i = 0; i < 4; i++) {
+    float val = min_arr[i];
+    if (min_ptr && val < min) {
+      min = val;
+    }
+    val = max_arr[i];
+    if (max_ptr && val > max) {
+      max = val;
+    }
+  }
+
+  if (min_ptr) {
+    *min_ptr = min;
+  }
+  if (max_ptr) {
+    *max_ptr = max;
+  }
 }
 
 #endif
@@ -133,7 +199,7 @@ static void normalize2D_minmax_sse(uint8_t min, uint8_t max,
                                    int width, int height,
                                    float* dst, int dst_stride) {
   if (max == min) {
-    memsetf(dst, width * height, 0);
+    memsetf(dst, 0, width * height);
     return;
   }
   const __m128i min_vec = _mm_set1_epi8(min);
@@ -190,14 +256,19 @@ static void minmax2D_sse(const uint8_t* src, int src_stride,
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width - 15; x += 16) {
       __m128i vec = _mm_loadu_si128((const __m128i*)(src + y * src_stride + x));
-      min_vec = _mm_min_epu8(vec, min_vec);
-      max_vec = _mm_max_epu8(vec, max_vec);
+      if (min_ptr) {
+        min_vec = _mm_min_epu8(vec, min_vec);
+      }
+      if (max_ptr) {
+        max_vec = _mm_max_epu8(vec, max_vec);
+      }
     }
     for (int x = width & ~0xF; x < width; x++) {
       float val = src[y * src_stride + x];
-      if (val < min) {
+      if (min_ptr && val < min) {
         min = val;
-      } else if (val > max) {
+      }
+      if (max_ptr && val > max) {
         max = val;
       }
     }
@@ -205,21 +276,80 @@ static void minmax2D_sse(const uint8_t* src, int src_stride,
   // Gather the results
   uint8_t min_arr[16] __attribute__((aligned(64))),
       max_arr[16] __attribute__((aligned(64)));
-  _mm_store_si128((__m128i*)min_arr, min_vec);
-  _mm_store_si128((__m128i*)max_arr, max_vec);
+  if (min_ptr) {
+    _mm_store_si128((__m128i*)min_arr, min_vec);
+  }
+  if (max_ptr) {
+    _mm_store_si128((__m128i*)max_arr, max_vec);
+  }
   for (int i = 0; i < 16; i++) {
     float val = min_arr[i];
-    if (val < min) {
+    if (min_ptr && val < min) {
       min = val;
     }
     val = max_arr[i];
-    if (val > max) {
+    if (max_ptr && val > max) {
       max = val;
     }
   }
 
-  *min_ptr = min;
-  *max_ptr = max;
+  if (min_ptr) {
+    *min_ptr = min;
+  }
+  if (max_ptr) {
+    *max_ptr = max;
+  }
+}
+
+static void minmax1D_avx(const float* src, int length,
+                         float* min_ptr, float* max_ptr) {
+  float min = src[0], max = src[0];
+  __m256 min_vec = _mm256_set1_ps(min), max_vec = _mm256_set1_ps(max);
+  for (int i = 0; i < length - 7; i += 8) {
+    __m256 vec = _mm256_loadu_ps(src + i);
+    if (min_ptr) {
+      min_vec = _mm256_min_ps(vec, min_vec);
+    }
+    if (max_ptr) {
+      max_vec = _mm256_max_ps(vec, max_vec);
+    }
+  }
+  for (int i = length & ~0x7; i < length; i++) {
+    float val = src[i];
+    if (min_ptr && val < min) {
+      min = val;
+    }
+    if (max_ptr && val > max) {
+      max = val;
+    }
+  }
+
+  // Gather the results
+  float min_arr[8] __attribute__((aligned(64))),
+      max_arr[8] __attribute__((aligned(64)));
+  if (min_ptr) {
+    _mm256_store_ps(min_arr, min_vec);
+  }
+  if (max_ptr) {
+    _mm256_store_ps(max_arr, max_vec);
+  }
+  for (int i = 0; i < 8; i++) {
+    float val = min_arr[i];
+    if (min_ptr && val < min) {
+      min = val;
+    }
+    val = max_arr[i];
+    if (max_ptr && val > max) {
+      max = val;
+    }
+  }
+
+  if (min_ptr) {
+    *min_ptr = min;
+  }
+  if (max_ptr) {
+    *max_ptr = max;
+  }
 }
 
 #endif
@@ -251,15 +381,40 @@ static void minmax2D_novec(const uint8_t* src, int src_stride,
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       float val = src[y * src_stride + x];
-      if (val < min) {
+      if (min_ptr && val < min) {
         min = val;
-      } else if (val > max) {
+      }
+      if (max_ptr && val > max) {
         max = val;
       }
     }
   }
-  *min_ptr = min;
-  *max_ptr = max;
+  if (min_ptr) {
+    *min_ptr = min;
+  }
+  if (max_ptr) {
+    *max_ptr = max;
+  }
+}
+
+static void minmax1D_novec(const float* src, int length,
+                           float* min_ptr, float* max_ptr) {
+  float min = src[0], max = src[0];
+  for (int i = 0; i < length; i++) {
+    float val = src[i];
+    if (min_ptr && val < min) {
+      min = val;
+    }
+    if (max_ptr && val > max) {
+      max = val;
+    }
+  }
+  if (min_ptr) {
+    *min_ptr = min;
+  }
+  if (max_ptr) {
+    *max_ptr = max;
+  }
 }
 
 void normalize2D(int simd, const uint8_t* src, int src_stride,
@@ -276,6 +431,9 @@ void minmax2D(int simd, const uint8_t* src, int src_stride,
   assert(width > 0);
   assert(height > 0);
   assert(src_stride >= width);
+  if (!min && !max) {
+    return;
+  }
   if (simd) {
 #ifdef __ARM_NEON__
     minmax2D_neon(src, src_stride, width, height, min, max);
@@ -314,5 +472,25 @@ void normalize2D_minmax(int simd, uint8_t min, uint8_t max,
 #endif
     normalize2D_minmax_novec(min, max, src, src_stride, width, height,
                              dst, dst_stride);
+  }
+}
+
+void minmax1D(int simd, const float *src, int length, float *min, float *max) {
+  assert(src);
+  assert(length > 0);
+  if (!min && !max) {
+    return;
+  }
+  if (simd) {
+#ifdef __ARM_NEON__
+    minmax1D_neon(src, length, min, max);
+  } else {
+#elif defined(__SSE2__)
+    minmax1D_avx(src, length, min, max);
+  } else {
+#else
+  } {
+#endif
+    minmax1D_novec(src, length, min, max);
   }
 }
