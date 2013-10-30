@@ -92,7 +92,7 @@ static void matrix_sub_neon(const float *m1, const float *m2,
     vst1q_f32(res + i, vec_r);
   }
   for (; i < length; i++) {
-    res[i] = m1[i] + m2[i];
+    res[i] = m1[i] - m2[i];
   }
 }
 
