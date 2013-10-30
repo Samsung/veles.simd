@@ -32,4 +32,10 @@
 #define SIMD_API_BEGIN EXTERN_C_BEGIN VISIBILITY_DEFAULT
 #define SIMD_API_END EXTERN_C_END VISIBILITY_POP
 
+#ifndef IMPLEMENTATION
+#define NOTNULL(...) __attribute__ ((__nonnull__ (__VA_ARGS__)))
+#else
+#define NOTNULL(...)
+#endif
+
 #endif  // INC_SIMD_COMMON_H_
