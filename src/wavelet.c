@@ -363,15 +363,14 @@ void stationary_wavelet_apply_na(WaveletType type, int order, int level,
 
 #ifdef __AVX__
 #define ALIGN_ORDER(order) (order % 8 == 0? order : (order / 8 + 1) * 8)
-
-#define DECLARE_PASSC(order) \
-  float highpassC[ALIGN_ORDER(order)] __attribute__ ((aligned (32))), \
-        lowpassC[ALIGN_ORDER(order)] __attribute__ ((aligned (32)))
 #else
-#define DECLARE_PASSC(order) float highpassC[order], lowpassC[order]
-
+#define ALIGN_ORDER(order) (order % 4 == 0? order : (order / 4 + 1) * 4)
 #define align_complement_f32(x) 0
 #endif
+
+#define DECLARE_PASSC(order) \
+  float highpassC[ALIGN_ORDER(order)] __attribute__ ((aligned (64))), \
+        lowpassC[ALIGN_ORDER(order)] __attribute__ ((aligned (64)))
 
 static void wavelet_apply2(WaveletType type, ExtensionType ext,
                            const float *__restrict src, size_t length,
@@ -393,6 +392,7 @@ static void wavelet_apply2(WaveletType type, ExtensionType ext,
   initialize_extension(ext, 2, src, length, src_ext);
 
 #ifdef __AVX__
+  int simd_end = ilength - 14;
   highpassC[2] = highpassC[0];
   highpassC[3] = highpassC[1];
   lowpassC[2] = lowpassC[0];
@@ -402,7 +402,7 @@ static void wavelet_apply2(WaveletType type, ExtensionType ext,
 
   const __m256 hpvec = _mm256_load_ps(highpassC);
   const __m256 lpvec = _mm256_load_ps(lowpassC);
-  for (int i = 0; i < ilength - 15; i += 16) {
+  for (int i = 0; i < simd_end; i += 16) {
     __m256 srcvec1 = _mm256_load_ps(src + i);
     __m256 srcvec2 = _mm256_load_ps(src + i + 8);
     __m256 vechi1 = _mm256_mul_ps(srcvec1, hpvec);
@@ -419,9 +419,14 @@ static void wavelet_apply2(WaveletType type, ExtensionType ext,
     _mm256_store_ps(destlo + i / 2, veclo);
   }
 #elif defined(__ARM_NEON__)
+  int simd_end = ilength - 6;
+  highpassC[2] = highpassC[0];
+  highpassC[3] = highpassC[1];
+  lowpassC[2] = lowpassC[0];
+  lowpassC[3] = lowpassC[1];
   const float32x4_t hivec = vld1q_f32(highpassC);
   const float32x4_t lovec = vld1q_f32(lowpassC);
-  for (int i = 0; i < ilength - 7; i += 8) {
+  for (int i = 0; i < simd_end; i += 8) {
     float32x4_t srcvec1 = vld1q_f32(src + i);
     float32x4_t srcvec2 = vld1q_f32(src + i + 4);
 
@@ -430,14 +435,14 @@ static void wavelet_apply2(WaveletType type, ExtensionType ext,
     float32x4_t vechiadd2 = vmulq_f32(srcvec2, hivec);
     float32x4_t vecloadd2 = vmulq_f32(srcvec2, lovec);
 
-    float32x2_t vecreshi1 = vpadd_f32(vget_high_f32(vechiadd1),
-                                      vget_low_f32(vechiadd1));
-    float32x2_t vecreslo1 = vpadd_f32(vget_high_f32(vecloadd1),
-                                      vget_low_f32(vecloadd1));
-    float32x2_t vecreshi2 = vpadd_f32(vget_high_f32(vechiadd2),
-                                      vget_low_f32(vechiadd2));
-    float32x2_t vecreslo2 = vpadd_f32(vget_high_f32(vecloadd2),
-                                      vget_low_f32(vecloadd2));
+    float32x2_t vecreshi1 = vpadd_f32(vget_low_f32(vechiadd1),
+                                      vget_high_f32(vechiadd1));
+    float32x2_t vecreslo1 = vpadd_f32(vget_low_f32(vecloadd1),
+                                      vget_high_f32(vecloadd1));
+    float32x2_t vecreshi2 = vpadd_f32(vget_low_f32(vechiadd2),
+                                      vget_high_f32(vechiadd2));
+    float32x2_t vecreslo2 = vpadd_f32(vget_low_f32(vecloadd2),
+                                      vget_high_f32(vecloadd2));
 
     vst1_f32(desthi + i / 2, vecreshi1);
     vst1_f32(desthi + i / 2 + 2, vecreshi2);
@@ -448,12 +453,11 @@ static void wavelet_apply2(WaveletType type, ExtensionType ext,
 #error This SIMD variant is not supported.
 #endif  // #elif defined(__ARM_NEON__)
   // Finish with the extended end
-  for (int i = ilength - 6, di = (ilength - 6) / 2;
-       i < ilength; i += 2, di++) {
+  for (int i = simd_end, di = simd_end / 2; i < ilength; i += 2, di++) {
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 2; j++) {
       int index = i + j;
-      float srcval = src[index < ilength? index : index % ilength];
+      float srcval = index < ilength? src[index] : src_ext[index - ilength];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }
@@ -523,6 +527,10 @@ static void stationary_wavelet_apply2(WaveletType type, int level,
   }
 #elif defined(__ARM_NEON__)
   int simd_end = ilength - 4;
+  highpassC[2] = highpassC[0];
+  highpassC[3] = highpassC[1];
+  lowpassC[2] = lowpassC[0];
+  lowpassC[3] = lowpassC[1];
   const float32x4_t hivec = vld1q_f32(highpassC);
   const float32x4_t lovec = vld1q_f32(lowpassC);
   for (int i = 0; i < simd_end; i += 4) {
@@ -534,18 +542,20 @@ static void stationary_wavelet_apply2(WaveletType type, int level,
     float32x4_t vechiadd2 = vmulq_f32(srcvec2, hivec);
     float32x4_t vecloadd2 = vmulq_f32(srcvec2, lovec);
 
-    float32x2_t vecreshi1 = vpadd_f32(vget_high_f32(vechiadd1),
-                                      vget_low_f32(vechiadd1));
-    float32x2_t vecreslo1 = vpadd_f32(vget_high_f32(vecloadd1),
-                                      vget_low_f32(vecloadd1));
-    float32x2_t vecreshi2 = vpadd_f32(vget_high_f32(vechiadd2),
-                                      vget_low_f32(vechiadd2));
-    float32x2_t vecreslo2 = vpadd_f32(vget_high_f32(vecloadd2),
-                                      vget_low_f32(vecloadd2));
+    float32x2_t vecreshi1 = vpadd_f32(vget_low_f32(vechiadd1),
+                                      vget_high_f32(vechiadd1));
+    float32x2_t vecreslo1 = vpadd_f32(vget_low_f32(vecloadd1),
+                                      vget_high_f32(vecloadd1));
+    float32x2_t vecreshi2 = vpadd_f32(vget_low_f32(vechiadd2),
+                                      vget_high_f32(vechiadd2));
+    float32x2_t vecreslo2 = vpadd_f32(vget_low_f32(vecloadd2),
+                                      vget_high_f32(vecloadd2));
     float32x2x2_t rhi = vtrn_f32(vecreshi1, vecreshi2);
     float32x2x2_t rlo = vtrn_f32(vecreslo1, vecreslo2);
-    vst2_f32(desthi, rhi);
-    vst2_f32(destlo, rlo);
+    vst1_f32(desthi + i, rhi.val[0]);
+    vst1_f32(desthi + i + 2, rhi.val[1]);
+    vst1_f32(destlo + i, rlo.val[0]);
+    vst1_f32(destlo + i + 2, rlo.val[1]);
   }
 #else
 #error This SIMD variant is not supported.
@@ -827,6 +837,7 @@ static void wavelet_apply6(WaveletType type, ExtensionType ext,
   initialize_extension(ext, 6, src, length, src_ext);
 
 #ifdef __AVX__
+  int simd_end = ilength - 6;
   highpassC[6] = 0.f;
   highpassC[7] = 0.f;
   lowpassC[6] = 0.f;
@@ -834,7 +845,7 @@ static void wavelet_apply6(WaveletType type, ExtensionType ext,
   const __m256 hpvec = _mm256_load_ps(highpassC);
   const __m256 lpvec = _mm256_load_ps(lowpassC);
   size_t alength = aligned_length(length);
-  for (int i = 0, di = 0; i < ilength - 6; i += 2, di++) {
+  for (int i = 0, di = 0; i < simd_end; i += 2, di++) {
     int ex = (i / 2) % 4;
     int offset = i + (ex > 0? ex * (alength - 10) + 8 : 0);
     __m256 srcvec = _mm256_load_ps(src + offset);
@@ -846,11 +857,12 @@ static void wavelet_apply6(WaveletType type, ExtensionType ext,
     destlo[di] = reslo;
   }
 #elif defined(__ARM_NEON__)
+  int simd_end = ilength - 4;
   const float32x4_t hivec1 = vld1q_f32(highpassC);
   const float32x2_t hivec2 = vld1_f32(&highpassC[4]);
   const float32x4_t lovec1 = vld1q_f32(lowpassC);
   const float32x2_t lovec2 = vld1_f32(&lowpassC[4]);
-  for (int i = 0, di = 0; i < ilength - 4; i += 2, di++) {
+  for (int i = 0, di = 0; i < simd_end; i += 2, di++) {
     float32x4_t srcvec1 = vld1q_f32(src + i);
     float32x2_t srcvec2 = vld1_f32(src + i + 4);
 
@@ -875,12 +887,7 @@ static void wavelet_apply6(WaveletType type, ExtensionType ext,
 #error This SIMD variant is not supported.
 #endif  // #elif defined(__ARM_NEON__)
   // Finish with the extended end
-#ifdef __AVX__
-  for (int i = ilength - 6, di = (ilength - 6) / 2;
-#elif defined(__ARM_NEON__)
-  for (int i = ilength - 4, di = (ilength - 4) / 2;
-#endif
-       i < ilength; i += 2, di++) {
+  for (int i = simd_end, di = simd_end / 2; i < ilength; i += 2, di++) {
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 6; j++) {
       int index = i + j;
@@ -1211,6 +1218,7 @@ static void wavelet_apply12(WaveletType type, ExtensionType ext,
   initialize_extension(ext, 12, src, length, src_ext);
 
 #ifdef __AVX__
+  int simd_end = ilength - 14;
   highpassC[12] = 0.f;
   highpassC[13] = 0.f;
   highpassC[14] = 0.f;
@@ -1224,7 +1232,7 @@ static void wavelet_apply12(WaveletType type, ExtensionType ext,
   const __m256 hpvec2 = _mm256_load_ps(&highpassC[8]);
   const __m256 lpvec2 = _mm256_load_ps(&lowpassC[8]);
   size_t alength = aligned_length(length);
-  for (int i = 0, di = 0; i < ilength - 14; i += 2, di++) {
+  for (int i = 0, di = 0; i < simd_end; i += 2, di++) {
     int ex = (i / 2) % 4;
     int offset = i + (ex > 0? ex * (alength - 10) + 8 : 0);
     __m256 srcvec1 = _mm256_load_ps(src + offset);
@@ -1241,13 +1249,14 @@ static void wavelet_apply12(WaveletType type, ExtensionType ext,
     destlo[di] = reslo;
   }
 #elif defined(__ARM_NEON__)
+  int simd_end = ilength - 10;
   const float32x4_t hivec1 = vld1q_f32(highpassC);
   const float32x4_t hivec2 = vld1q_f32(&highpassC[4]);
   const float32x4_t hivec3 = vld1q_f32(&highpassC[8]);
   const float32x4_t lovec1 = vld1q_f32(lowpassC);
   const float32x4_t lovec2 = vld1q_f32(&lowpassC[4]);
   const float32x4_t lovec3 = vld1q_f32(&lowpassC[8]);
-  for (int i = 0, di = 0; i < ilength - 10; i += 2, di++) {
+  for (int i = 0, di = 0; i < simd_end; i += 2, di++) {
     float32x4_t srcvec1 = vld1q_f32(src + i);
     float32x4_t srcvec2 = vld1q_f32(src + i + 4);
     float32x4_t srcvec3 = vld1q_f32(src + i + 8);
@@ -1273,12 +1282,7 @@ static void wavelet_apply12(WaveletType type, ExtensionType ext,
 #error This SIMD variant is not supported.
 #endif  // #elif defined(__ARM_NEON__)
   // Finish with the extended end
-#ifdef __AVX__
-  for (int i = ilength - 14, di = (ilength - 14) / 2;
-#elif defined(__ARM_NEON__)
-  for (int i = ilength - 10, di = (ilength - 10) / 2;
-#endif
-       i < ilength; i += 2, di++) {
+  for (int i = simd_end, di = simd_end / 2; i < ilength; i += 2, di++) {
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 12; j++) {
       int index = i + j;
@@ -1685,7 +1689,7 @@ static void stationary_wavelet_applyN_core(const float* highpassC,
   }
 #elif defined(__ARM_NEON__)
   assert(size % 8 == 0);
-  for (int i = 0; i < length - size + 1; i++) {
+  for (int i = 0; i < (int)length - size + 1; i++) {
     float32x4_t rvechi = vdupq_n_f32(0), rveclo = vdupq_n_f32(0);
     for (int j = 0; j < size; j += 8) {
       float32x4_t srcvec1 = vld1q_f32(src + i + j);
