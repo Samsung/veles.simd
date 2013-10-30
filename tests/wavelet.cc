@@ -291,7 +291,8 @@ TEST(Wavelet, SIMDSpeedup) {
     auto checkPointStart = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < BENCHMARK_LENGTH; i++) {
-      wavelet_apply(WAVELET_TYPE_DAUBECHIES, order, prep, length, desthi, destlo);  // NOLINT(*)
+      wavelet_apply(WAVELET_TYPE_DAUBECHIES, order, EXTENSION_TYPE_PERIODIC,\
+                    prep, length, desthi, destlo);
     }
 
     auto checkPointFinish = std::chrono::high_resolution_clock::now();
@@ -299,8 +300,8 @@ TEST(Wavelet, SIMDSpeedup) {
     checkPointStart = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < BENCHMARK_LENGTH; i++) {
-      wavelet_apply_na(WAVELET_TYPE_DAUBECHIES, order, array, length,
-                       desthi, destlo);
+      wavelet_apply_na(WAVELET_TYPE_DAUBECHIES, order, EXTENSION_TYPE_PERIODIC,\
+                       array, length, desthi, destlo);
     }
 
     checkPointFinish = std::chrono::high_resolution_clock::now();
