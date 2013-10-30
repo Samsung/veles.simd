@@ -20,11 +20,10 @@ SIMD_API_BEGIN
 #ifdef __AVX__
 
 #include <immintrin.h>
-#include "src/config.h"
 
 float ElementAt(__m256 vector, int index) __attribute__((optimize(2)));
 
-INLINE unsigned long long __xgetbv() {
+static __attribute__((always_inline)) inline unsigned long long __xgetbv() {
 #if defined(__GNUC__) && __GNUC_PREREQ(4, 4)
   unsigned int index = 0;
   unsigned int eax, edx;
