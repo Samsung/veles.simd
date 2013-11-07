@@ -35,7 +35,7 @@ CrossCorrelationFFTHandle cross_correlate_fft_initialize(size_t xLength,
 /// @param handle The structure obtained from cross_correlate_fft_initialize().
 /// @param x The first signal (long one).
 /// @param h The second signal (short one).
-/// @param result The resulting signal of length xLength.
+/// @param result The resulting signal of length xLength + hLength - 1.
 /// @note result and x may be the same arrays.
 void cross_correlate_fft(CrossCorrelationFFTHandle handle,
                          const float *x, const float *h,
@@ -61,7 +61,7 @@ CrossCorrelationOverlapSaveHandle cross_correlate_overlap_save_initialize(
 /// cross_correlate_overlap_save_initialize().
 /// @param x The first signal (long one).
 /// @param h The second signal (short one).
-/// @param result The resulting signal of length xLength.
+/// @param result The resulting signal of length xLength + hLength - 1.
 /// @note result and x may be the same arrays.
 void cross_correlate_overlap_save(CrossCorrelationOverlapSaveHandle handle,
                                   const float *__restrict x,
@@ -82,7 +82,7 @@ void cross_correlate_overlap_save_finalize(
 /// @param xLength The length of the first array in float-s.
 /// @param h The second signal (short one).
 /// @param hLength The length of the second array in float-s.
-/// @param result The resulting signal of length xLength.
+/// @param result The resulting signal of length xLength + hLength - 1.
 /// @note result and x may be the same arrays.
 void cross_correlate_simd(int simd,
                           const float *x, size_t xLength,
@@ -104,7 +104,7 @@ CrossCorrelationHandle cross_correlate_initialize(size_t xLength,
 /// @param handle The structure obtained from cross_correlate_initialize().
 /// @param x The first signal (long one).
 /// @param h The second signal (short one).
-/// @param result The resulting signal of length xLength.
+/// @param result The resulting signal of length xLength + hLength - 1.
 /// @note result and x may be the same arrays.
 void cross_correlate(CrossCorrelationHandle handle,
                      const float *x, const float *h,
