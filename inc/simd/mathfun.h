@@ -22,26 +22,26 @@ SIMD_API_BEGIN
 
 typedef float (*PsvStdFunc)(float);
 
-inline void func_psv_novec(PsvStdFunc func, const float *src,
+INLINE void func_psv_novec(PsvStdFunc func, const float *src,
                            size_t length, float *res) {
   for(size_t i = 0; i < length; ++i) {
     res[i] = func(src[i]);
   }
 }
 
-inline void sin_psv_novec(const float *src, size_t length, float *res) {
+INLINE void sin_psv_novec(const float *src, size_t length, float *res) {
   func_psv_novec(sinf, src, length, res);
 }
 
-inline void cos_psv_novec(const float *src, size_t length, float *res) {
+INLINE void cos_psv_novec(const float *src, size_t length, float *res) {
   func_psv_novec(cosf, src, length, res);
 }
 
-inline void log_psv_novec(const float *src, size_t length, float *res) {
+INLINE void log_psv_novec(const float *src, size_t length, float *res) {
   func_psv_novec(logf, src, length, res);
 }
 
-inline void exp_psv_novec(const float *src, size_t length, float *res) {
+INLINE void exp_psv_novec(const float *src, size_t length, float *res) {
   func_psv_novec(expf, src, length, res);
 }
 
@@ -50,7 +50,7 @@ inline void exp_psv_novec(const float *src, size_t length, float *res) {
 
 typedef float32x4_t (*PsvNeonFunc)(float32x4_t);
 
-inline void func_psv_neon(PsvNeonFunc neon_func, PsvStdFunc std_func,
+INLINE void func_psv_neon(PsvNeonFunc neon_func, PsvStdFunc std_func,
                           const float *src, size_t length, float *res
                           ) {
   int ilength = (int)length;
@@ -65,19 +65,19 @@ inline void func_psv_neon(PsvNeonFunc neon_func, PsvStdFunc std_func,
   }
 }
 
-inline void sin_psv_neon(const float *src, size_t length, float *res) {
+INLINE void sin_psv_neon(const float *src, size_t length, float *res) {
   func_psv_neon(sin_ps, sinf, src, length, res);
 }
 
-inline void cos_psv_neon(const float *src, size_t length, float *res) {
+INLINE void cos_psv_neon(const float *src, size_t length, float *res) {
   func_psv_neon(cos_ps, cosf, src, length, res);
 }
 
-inline void log_psv_neon(const float *src, size_t length, float *res) {
+INLINE void log_psv_neon(const float *src, size_t length, float *res) {
   func_psv_neon(log_ps, logf, src, length, res);
 }
 
-inline void exp_psv_neon(const float *src, size_t length, float *res) {
+INLINE void exp_psv_neon(const float *src, size_t length, float *res) {
   func_psv_neon(exp_ps, expf, src, length, res);
 }
 
@@ -88,7 +88,7 @@ inline void exp_psv_neon(const float *src, size_t length, float *res) {
 
 typedef __m256 (*PsvAvxFunc)(__m256);
 
-inline void func_psv_avx(PsvAvxFunc avx_func, PsvStdFunc std_func,
+INLINE void func_psv_avx(PsvAvxFunc avx_func, PsvStdFunc std_func,
                          const float *src, size_t length, float *res) {
   int ilength = (int)length;
   int i = 0;
@@ -102,19 +102,19 @@ inline void func_psv_avx(PsvAvxFunc avx_func, PsvStdFunc std_func,
   }
 }
 
-inline void sin_psv_avx(const float *src, size_t length, float *res) {
+INLINE void sin_psv_avx(const float *src, size_t length, float *res) {
   func_psv_avx(sin256_ps, sinf, src, length, res);
 }
 
-inline void cos_psv_avx(const float *src, size_t length, float *res) {
+INLINE void cos_psv_avx(const float *src, size_t length, float *res) {
   func_psv_avx(cos256_ps, cosf, src, length, res);
 }
 
-inline void log_psv_avx(const float *src, size_t length, float *res) {
+INLINE void log_psv_avx(const float *src, size_t length, float *res) {
   func_psv_avx(log256_ps, logf, src, length, res);
 }
 
-inline void exp_psv_avx(const float *src, size_t length, float *res) {
+INLINE void exp_psv_avx(const float *src, size_t length, float *res) {
   func_psv_avx(exp256_ps, expf, src, length, res);
 }
 
