@@ -12,7 +12,7 @@
 
 #include <gtest/gtest.h>
 #ifndef NO_FFTF
-#include <math.h>
+#include <cmath>
 #include <simd/correlate.h>
 #include <simd/memory.h>
 #include <simd/arithmetic-inl.h>
@@ -32,7 +32,7 @@ void DebugPrintConvolution(const char* name, const float* vec) {
   printf("\n");
 }
 
-TEST(correlate, ross_correlate_reference) {
+TEST(correlate, cross_correlate_reference) {
   float x[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
   float y[] = { 10, 9, 8, 7 };
   float z[11];

@@ -12,7 +12,7 @@
 
 #include <gtest/gtest.h>
 #ifndef NO_FFTF
-#include <math.h>
+#include <cmath>
 #include <simd/convolve.h>
 #include <simd/memory.h>
 #include <simd/arithmetic-inl.h>
