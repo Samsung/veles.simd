@@ -83,11 +83,11 @@ void cross_correlate_overlap_save_finalize(
 /// @param h The second signal (short one).
 /// @param hLength The length of the second array in float-s.
 /// @param result The resulting signal of length xLength + hLength - 1.
-/// @note result and x may be the same arrays.
+/// @note result, x and h may NOT be the same arrays.
 void cross_correlate_simd(int simd,
-                          const float *x, size_t xLength,
-                          const float *h, size_t hLength,
-                          float *result) NOTNULL(2, 4, 6);
+                          const float *__restrict x, size_t xLength,
+                          const float *__restrict h, size_t hLength,
+                          float *__restrict result) NOTNULL(2, 4, 6);
 
 typedef struct ConvolutionHandle CrossCorrelationHandle;
 
@@ -105,10 +105,10 @@ CrossCorrelationHandle cross_correlate_initialize(size_t xLength,
 /// @param x The first signal (long one).
 /// @param h The second signal (short one).
 /// @param result The resulting signal of length xLength + hLength - 1.
-/// @note result and x may be the same arrays.
+/// @note result, x and h may NOT be the same arrays.
 void cross_correlate(CrossCorrelationHandle handle,
-                     const float *x, const float *h,
-                     float *result) NOTNULL(2, 3, 4);
+                     const float *__restrict x, const float *__restrict h,
+                     float *__restrict result) NOTNULL(2, 3, 4);
 
 /// @brief Frees any resources allocated by
 /// cross_correlate_overlap_initialize().

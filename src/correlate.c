@@ -54,9 +54,9 @@ void cross_correlate_overlap_save_finalize(
 }
 
 void cross_correlate_simd(int simd,
-                          const float *x, size_t xLength,
-                          const float *h, size_t hLength,
-                          float *result) {
+                          const float *__restrict x, size_t xLength,
+                          const float *__restrict h, size_t hLength,
+                          float *__restrict result) {
   for (int n = hLength - 1; n > -(int)xLength; n--) {
     float sum = 0.f;
     int beg = n <= 0? -n : 0;
@@ -124,8 +124,8 @@ CrossCorrelationHandle cross_correlate_initialize(size_t xLength,
 }
 
 void cross_correlate(CrossCorrelationHandle handle,
-                     const float *x, const float *h,
-                     float *result) {
+                     const float *__restrict x, const float *__restrict h,
+                     float *__restrict result) {
   switch (handle.algorithm) {
     case kConvolutionAlgorithmFFT:
     case kConvolutionAlgorithmOverlapSave:
