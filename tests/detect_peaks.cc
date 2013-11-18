@@ -32,7 +32,7 @@ TEST_P(DetectPeaksTest, sin) {
   size_t points_count;
   detect_peaks(is_simd(), array, length, kExtremumTypeMaximum, &points,
                &points_count);
-  ASSERT_EQ(20, points_count);
+  ASSERT_EQ(20U, points_count);
   for (int i = 0; i < 20; i++) {
     ASSERT_EQ(i * 200 + 50, points[i].position) << i;
     ASSERT_FLOAT_EQ(1.f, points[i].value) << i;
@@ -40,7 +40,7 @@ TEST_P(DetectPeaksTest, sin) {
   free(points);
   detect_peaks(is_simd(), array, length, kExtremumTypeMinimum, &points,
                &points_count);
-  ASSERT_EQ(20, points_count);
+  ASSERT_EQ(20U, points_count);
   for (int i = 0; i < 20; i++) {
     ASSERT_EQ(i * 200 + 150, points[i].position) << i;
     ASSERT_FLOAT_EQ(-1.f, points[i].value) << i;
@@ -48,7 +48,7 @@ TEST_P(DetectPeaksTest, sin) {
   free(points);
   detect_peaks(is_simd(), array, length, kExtremumTypeBoth, &points,
                &points_count);
-  ASSERT_EQ(40, points_count);
+  ASSERT_EQ(40U, points_count);
   for (int i = 0; i < 40; i++) {
     ASSERT_EQ((i / 2) * 200 + 50 + 100 * (i % 2), points[i].position) << i;
     ASSERT_FLOAT_EQ(1.f - (i % 2) * 2, points[i].value) << i;
@@ -70,7 +70,7 @@ TEST_P(DetectPeaksTest, nasty_peaks) {
   size_t points_count;
   detect_peaks(is_simd(), array, length, kExtremumTypeMaximum, &points,
                &points_count);
-  ASSERT_EQ(4, points_count);
+  ASSERT_EQ(4U, points_count);
   ASSERT_EQ(7, points[0].position) << "0";
   ASSERT_EQ(16, points[1].position) << "1";
   ASSERT_EQ(97, points[2].position) << "2";

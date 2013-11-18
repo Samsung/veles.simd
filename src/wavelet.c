@@ -475,11 +475,11 @@ static void stationary_wavelet_apply2(WaveletType type, int level,
                                       size_t length,
                                       float *__restrict desthi,
                                       float *__restrict destlo) {
+  int stride = 1 << (level - 1);
 #ifdef SIMD
   assert(length > 0);
   assert(src && desthi && destlo);
 
-  int stride = 1 << (level - 1);
   if (stride >= 4 ||
 #ifdef __AVX__
       length < 12
@@ -682,11 +682,11 @@ static void stationary_wavelet_apply4(WaveletType type, int level,
                                       size_t length,
                                       float *__restrict desthi,
                                       float *__restrict destlo) {
+  int stride = 1 << (level - 1);
 #ifdef SIMD
   assert(length > 0);
   assert(src && desthi && destlo);
 
-  int stride = 1 << (level - 1);
   if (stride >= 4 ||
 #ifdef __AVX__
       length < 12
@@ -915,11 +915,11 @@ static void stationary_wavelet_apply6(WaveletType type, int level,
                                       size_t length,
                                       float *__restrict desthi,
                                       float *__restrict destlo) {
+  int stride = 1 << (level - 1);
 #ifdef SIMD
   assert(length > 0);
   assert(src && desthi && destlo);
 
-  int stride = 1 << (level - 1);
   if (stride >= 4 || length < 8) {
     stationary_wavelet_apply_na(type, 6 / stride, level, ext, src, length,
                                 desthi, destlo);
@@ -1109,11 +1109,11 @@ static void stationary_wavelet_apply8(WaveletType type, int level,
                                       size_t length,
                                       float *__restrict desthi,
                                       float *__restrict destlo) {
+  int stride = 1 << (level - 1);
 #ifdef SIMD
   assert(length > 0);
   assert(src && desthi && destlo);
 
-  int stride = 1 << (level - 1);
   if (stride >= 4 || length < 8) {
     stationary_wavelet_apply_na(type, 8 / stride, level, ext, src, length,
                                 desthi, destlo);
@@ -1310,11 +1310,11 @@ static void stationary_wavelet_apply12(WaveletType type, int level,
                                        size_t length,
                                        float *__restrict desthi,
                                        float *__restrict destlo) {
+  int stride = 1 << (level - 1);
 #ifdef SIMD
   assert(length > 0);
   assert(src && desthi && destlo);
 
-  int stride = 1 << (level - 1);
   if (stride >= 4 ||
 #ifdef __AVX__
       length < 16
@@ -1539,11 +1539,11 @@ static void stationary_wavelet_apply16(WaveletType type, int level,
                                        size_t length,
                                        float *__restrict desthi,
                                        float *__restrict destlo) {
+  int stride = 1 << (level - 1);
 #ifdef SIMD
   assert(length > 0);
   assert(src && desthi && destlo);
 
-  int stride = 1 << (level - 1);
   if (stride >= 4 || length < 16) {
     stationary_wavelet_apply_na(type, 16 / stride, level, ext, src, length,
                                 desthi, destlo);
@@ -1649,6 +1649,7 @@ static void stationary_wavelet_apply16(WaveletType type, int level,
 #endif
 }
 
+#ifdef SIMD
 static void stationary_wavelet_applyN_core(const float* highpassC,
                                            const float* lowpassC, int size,
                                            const float *restrict src,
@@ -1717,6 +1718,7 @@ static void stationary_wavelet_applyN_core(const float* highpassC,
 #error This SIMD variant is not supported.
 #endif  // #elif defined(__ARM_NEON__)
 }
+#endif  // SIMD
 
 static void stationary_wavelet_apply24(WaveletType type, int level,
                                        ExtensionType ext,
@@ -1724,11 +1726,11 @@ static void stationary_wavelet_apply24(WaveletType type, int level,
                                        size_t length,
                                        float *__restrict desthi,
                                        float *__restrict destlo) {
+  int stride = 1 << (level - 1);
 #ifdef SIMD
   assert(length > 0);
   assert(src && desthi && destlo);
 
-  int stride = 1 << (level - 1);
   if (stride >= 4 ||
 #ifdef __AVX__
       length < 32
@@ -1814,11 +1816,11 @@ static void stationary_wavelet_applyN(WaveletType type, int size, int level,
                                       size_t length,
                                       float *__restrict desthi,
                                       float *__restrict destlo) {
+  int stride = 1 << (level - 1);
 #ifdef SIMD
   assert(length > 0);
   assert(src && desthi && destlo);
 
-  int stride = 1 << (level - 1);
   if (stride >= 4 || length < (size_t)size) {
     stationary_wavelet_apply_na(type, size / stride, level, ext, src, length,
                                 desthi, destlo);

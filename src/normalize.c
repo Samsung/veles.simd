@@ -301,6 +301,7 @@ static void minmax2D_sse(const uint8_t* src, int src_stride,
   }
 }
 
+#ifdef __AVX__
 static void minmax1D_avx(const float* src, int length,
                          float* min_ptr, float* max_ptr) {
   float min = src[0], max = src[0];
@@ -351,8 +352,9 @@ static void minmax1D_avx(const float* src, int length,
     *max_ptr = max;
   }
 }
+#endif  // __AVX__
 
-#endif
+#endif  // __SSE2__
 
 static void normalize2D_minmax_novec(uint8_t min, uint8_t max,
                                      const uint8_t* src, int src_stride,
