@@ -240,7 +240,6 @@ static void normalize2D_minmax_sse(uint8_t min, uint8_t max,
       _mm_storeu_ps(dst_ptr, fhilo);
       dst_ptr += 4;
       _mm_storeu_ps(dst_ptr, fhihi);
-      dst_ptr += 4;
     }
     for (int x = width & ~0xF; x < width; x++) {
       dst[y * dst_stride + x] = (src[y * src_stride + x] - min) / diff - 1.0f;

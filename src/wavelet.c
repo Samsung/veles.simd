@@ -198,6 +198,7 @@ INLINE NOTNULL(4, 5) void stationary_initialize_highpass_lowpass(
     initialize_highpass_lowpass(type, size, highpass, lowpass);
     return;
   }
+  assert(size % stride == 0);
   int order = size / stride;
   assert(order >= 2);
   check_wavelet_order(type, order);
