@@ -23,6 +23,11 @@ void convolve_simd(int simd,
                    const float *__restrict x, size_t xLength,
                    const float *__restrict h, size_t hLength,
                    float *__restrict result) {
+  assert(x);
+  assert(h);
+  assert(result);
+  assert(xLength > 0);
+  assert(hLength > 0);
   for (int n = 0; n < (int)(xLength + hLength - 1); n++) {
     float sum = 0.f;
     int beg = n < (int)xLength? 0 : n - xLength + 1;
