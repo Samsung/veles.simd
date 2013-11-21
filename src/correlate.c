@@ -76,7 +76,7 @@ void cross_correlate_simd(int simd,
       }
       accum = _mm256_hadd_ps(accum, accum);
       accum = _mm256_hadd_ps(accum, accum);
-      sum = accum[0] + accum[4];
+      sum = _mm256_get_ps(accum, 0) + _mm256_get_ps(accum, 4);
       for (int m = simdEnd; m < end; m++) {
         sum += x[m] * h[n + m];
       }

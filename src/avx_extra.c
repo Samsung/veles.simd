@@ -1,5 +1,5 @@
 /*! @file avx_extra.c
- *  @brief AVX ElementAt.
+ *  @brief AVX _mm256_get_ps.
  *  @author Markovtsev Vadim <v.markovtsev@samsung.com>
  *  @version 1.0
  *
@@ -10,11 +10,12 @@
  *  Copyright 2013 Samsung R&D Institute Russia
  */
 
-#include "inc/simd/avx_extra.h"
+#define _mm256_get_ps_IMPLEMENTATION
+#include "inc/simd/instruction_set.h"
 
 #ifdef __AVX__
-float ElementAt(__m256 vector, int index) {
-  return vector[index];
+float _mm256_get_ps(__m256 vector, int index) {
+  return __m256_get_ps(vector, index);
 }
 #endif
 

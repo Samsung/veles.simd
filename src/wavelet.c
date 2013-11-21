@@ -612,14 +612,14 @@ static void wavelet_apply4(WaveletType type, ExtensionType ext,
     __m256 veclo1 = _mm256_dp_ps(srcvec1, lpvec, 0xFF);
     __m256 vechi2 = _mm256_dp_ps(srcvec2, hpvec, 0xFF);
     __m256 veclo2 = _mm256_dp_ps(srcvec2, lpvec, 0xFF);
-    desthi[di] = vechi1[0];
-    destlo[di] = veclo1[0];
-    desthi[di + 1] = vechi2[0];
-    destlo[di + 1] = veclo2[0];
-    desthi[di + 2] = vechi1[4];
-    destlo[di + 2] = veclo1[4];
-    desthi[di + 3] = vechi2[4];
-    destlo[di + 3] = veclo2[4];
+    desthi[di] = _mm256_get_ps(vechi1, 0);
+    destlo[di] = _mm256_get_ps(veclo1, 0);
+    desthi[di + 1] = _mm256_get_ps(vechi2, 0);
+    destlo[di + 1] = _mm256_get_ps(veclo2, 0);
+    desthi[di + 2] = _mm256_get_ps(vechi1, 4);
+    destlo[di + 2] = _mm256_get_ps(veclo1, 4);
+    desthi[di + 3] = _mm256_get_ps(vechi2, 4);
+    destlo[di + 3] = _mm256_get_ps(veclo2, 4);
   }
 #elif defined(__ARM_NEON__)
   const float32x4_t hivec = vld1q_f32(highpassC);
@@ -729,23 +729,23 @@ static void stationary_wavelet_apply4(WaveletType type, int level,
     __m256 vechi4 = _mm256_dp_ps(srcvec4, hpvec, 0xFF);
     __m256 veclo4 = _mm256_dp_ps(srcvec4, lpvec, 0xFF);
 
-    desthi[i] = vechi1[0];
-    destlo[i] = veclo1[0];
-    desthi[i + 1] = vechi2[0];
-    destlo[i + 1] = veclo2[0];
-    desthi[i + 2] = vechi3[0];
-    destlo[i + 2] = veclo3[0];
-    desthi[i + 3] = vechi4[0];
-    destlo[i + 3] = veclo4[0];
+    desthi[i] = _mm256_get_ps(vechi1, 0);
+    destlo[i] = _mm256_get_ps(veclo1, 0);
+    desthi[i + 1] = _mm256_get_ps(vechi2, 0);
+    destlo[i + 1] = _mm256_get_ps(veclo2, 0);
+    desthi[i + 2] = _mm256_get_ps(vechi3, 0);
+    destlo[i + 2] = _mm256_get_ps(veclo3, 0);
+    desthi[i + 3] = _mm256_get_ps(vechi4, 0);
+    destlo[i + 3] = _mm256_get_ps(veclo4, 0);
 
-    desthi[i + 4] = vechi1[4];
-    destlo[i + 4] = veclo1[4];
-    desthi[i + 5] = vechi2[4];
-    destlo[i + 5] = veclo2[4];
-    desthi[i + 6] = vechi3[4];
-    destlo[i + 6] = veclo3[4];
-    desthi[i + 7] = vechi4[4];
-    destlo[i + 7] = veclo4[4];
+    desthi[i + 4] = _mm256_get_ps(vechi1, 4);
+    destlo[i + 4] = _mm256_get_ps(veclo1, 4);
+    desthi[i + 5] = _mm256_get_ps(vechi2, 4);
+    destlo[i + 5] = _mm256_get_ps(veclo2, 4);
+    desthi[i + 6] = _mm256_get_ps(vechi3, 4);
+    destlo[i + 6] = _mm256_get_ps(veclo3, 4);
+    desthi[i + 7] = _mm256_get_ps(vechi4, 4);
+    destlo[i + 7] = _mm256_get_ps(veclo4, 4);
   }
 #elif defined(__ARM_NEON__)
   int simd_end = ilength - 6;
@@ -852,8 +852,8 @@ static void wavelet_apply6(WaveletType type, ExtensionType ext,
     __m256 srcvec = _mm256_load_ps(src + offset);
     __m256 vechi = _mm256_dp_ps(srcvec, hpvec, 0xFF);
     __m256 veclo = _mm256_dp_ps(srcvec, lpvec, 0xFF);
-    float reshi = vechi[0] + vechi[4];
-    float reslo = veclo[0] + veclo[4];
+    float reshi = _mm256_get_ps(vechi, 0) + _mm256_get_ps(vechi, 4);
+    float reslo = _mm256_get_ps(veclo, 0) + _mm256_get_ps(veclo, 4);
     desthi[di] = reshi;
     destlo[di] = reslo;
   }
@@ -948,10 +948,10 @@ static void stationary_wavelet_apply6(WaveletType type, int level,
     __m256 veclo1 = _mm256_dp_ps(srcvec1, lpvec, 0xFF);
     __m256 vechi2 = _mm256_dp_ps(srcvec2, hpvec, 0xFF);
     __m256 veclo2 = _mm256_dp_ps(srcvec2, lpvec, 0xFF);
-    float reshi1 = vechi1[0] + vechi1[4];
-    float reslo1 = veclo1[0] + veclo1[4];
-    float reshi2 = vechi2[0] + vechi2[4];
-    float reslo2 = veclo2[0] + veclo2[4];
+    float reshi1 = _mm256_get_ps(vechi1, 0) + _mm256_get_ps(vechi1, 4);
+    float reslo1 = _mm256_get_ps(veclo1, 0) + _mm256_get_ps(veclo1, 4);
+    float reshi2 = _mm256_get_ps(vechi2, 0) + _mm256_get_ps(vechi2, 4);
+    float reslo2 = _mm256_get_ps(veclo2, 0) + _mm256_get_ps(veclo2, 4);
     desthi[i] = reshi1;
     destlo[i] = reslo1;
     desthi[i + 1] = reshi2;
@@ -1048,8 +1048,8 @@ static void wavelet_apply8(WaveletType type, ExtensionType ext,
     __m256 srcvec = _mm256_load_ps(src + offset);
     __m256 vechi = _mm256_dp_ps(srcvec, hpvec, 0xFF);
     __m256 veclo = _mm256_dp_ps(srcvec, lpvec, 0xFF);
-    float reshi = vechi[0] + vechi[4];
-    float reslo = veclo[0] + veclo[4];
+    float reshi = _mm256_get_ps(vechi, 0) + _mm256_get_ps(vechi, 4);
+    float reslo = _mm256_get_ps(veclo, 0) + _mm256_get_ps(veclo, 4);
     desthi[di] = reshi;
     destlo[di] = reslo;
   }
@@ -1138,10 +1138,10 @@ static void stationary_wavelet_apply8(WaveletType type, int level,
     __m256 veclo1 = _mm256_dp_ps(srcvec1, lpvec, 0xFF);
     __m256 vechi2 = _mm256_dp_ps(srcvec2, hpvec, 0xFF);
     __m256 veclo2 = _mm256_dp_ps(srcvec2, lpvec, 0xFF);
-    float reshi1 = vechi1[0] + vechi1[4];
-    float reslo1 = veclo1[0] + veclo1[4];
-    float reshi2 = vechi2[0] + vechi2[4];
-    float reslo2 = veclo2[0] + veclo2[4];
+    float reshi1 = _mm256_get_ps(vechi1, 0) + _mm256_get_ps(vechi1, 4);
+    float reslo1 = _mm256_get_ps(veclo1, 0) + _mm256_get_ps(veclo1, 4);
+    float reshi2 = _mm256_get_ps(vechi2, 0) + _mm256_get_ps(vechi2, 4);
+    float reslo2 = _mm256_get_ps(veclo2, 0) + _mm256_get_ps(veclo2, 4);
     desthi[i] = reshi1;
     destlo[i] = reslo1;
     desthi[i + 1] = reshi2;
@@ -1244,8 +1244,8 @@ static void wavelet_apply12(WaveletType type, ExtensionType ext,
     __m256 veclo2 = _mm256_dp_ps(srcvec2, lpvec2, 0xFF);
     __m256 vechi = _mm256_add_ps(vechi1, vechi2);
     __m256 veclo = _mm256_add_ps(veclo1, veclo2);
-    float reshi = vechi[0] + vechi[4];
-    float reslo = veclo[0] + veclo[4];
+    float reshi = _mm256_get_ps(vechi, 0) + _mm256_get_ps(vechi, 4);
+    float reslo = _mm256_get_ps(veclo, 0) + _mm256_get_ps(veclo, 4);
     desthi[di] = reshi;
     destlo[di] = reslo;
   }
@@ -1369,10 +1369,10 @@ static void stationary_wavelet_apply12(WaveletType type, int level,
     __m256 veclo1 = _mm256_add_ps(veclo1_1, veclo1_2);
     __m256 vechi2 = _mm256_add_ps(vechi2_1, vechi2_2);
     __m256 veclo2 = _mm256_add_ps(veclo2_1, veclo2_2);
-    float reshi1 = vechi1[0] + vechi1[4];
-    float reslo1 = veclo1[0] + veclo1[4];
-    float reshi2 = vechi2[0] + vechi2[4];
-    float reslo2 = veclo2[0] + veclo2[4];
+    float reshi1 = _mm256_get_ps(vechi1, 0) + _mm256_get_ps(vechi1, 4);
+    float reslo1 = _mm256_get_ps(veclo1, 0) + _mm256_get_ps(veclo1, 4);
+    float reshi2 = _mm256_get_ps(vechi2, 0) + _mm256_get_ps(vechi2, 4);
+    float reslo2 = _mm256_get_ps(veclo2, 0) + _mm256_get_ps(veclo2, 4);
     desthi[i] = reshi1;
     destlo[i] = reslo1;
     desthi[i + 1] = reshi2;
@@ -1465,8 +1465,8 @@ static void wavelet_apply16(WaveletType type, ExtensionType ext,
     __m256 veclo2 = _mm256_dp_ps(srcvec2, lpvec2, 0xFF);
     __m256 vechi = _mm256_add_ps(vechi1, vechi2);
     __m256 veclo = _mm256_add_ps(veclo1, veclo2);
-    float reshi = vechi[0] + vechi[4];
-    float reslo = veclo[0] + veclo[4];
+    float reshi = _mm256_get_ps(vechi, 0) + _mm256_get_ps(vechi, 4);
+    float reslo = _mm256_get_ps(veclo, 0) + _mm256_get_ps(veclo, 4);
     desthi[di] = reshi;
     destlo[di] = reslo;
   }
@@ -1582,10 +1582,10 @@ static void stationary_wavelet_apply16(WaveletType type, int level,
     __m256 veclo1 = _mm256_add_ps(veclo1_1, veclo1_2);
     __m256 vechi2 = _mm256_add_ps(vechi2_1, vechi2_2);
     __m256 veclo2 = _mm256_add_ps(veclo2_1, veclo2_2);
-    float reshi1 = vechi1[0] + vechi1[4];
-    float reslo1 = veclo1[0] + veclo1[4];
-    float reshi2 = vechi2[0] + vechi2[4];
-    float reslo2 = veclo2[0] + veclo2[4];
+    float reshi1 = _mm256_get_ps(vechi1, 0) + _mm256_get_ps(vechi1, 4);
+    float reslo1 = _mm256_get_ps(veclo1, 0) + _mm256_get_ps(veclo1, 4);
+    float reshi2 = _mm256_get_ps(vechi2, 0) + _mm256_get_ps(vechi2, 4);
+    float reslo2 = _mm256_get_ps(veclo2, 0) + _mm256_get_ps(veclo2, 4);
     desthi[i] = reshi1;
     destlo[i] = reslo1;
     desthi[i + 1] = reshi2;
@@ -1683,8 +1683,8 @@ static void stationary_wavelet_applyN_core(const float* highpassC,
     rveclo = _mm256_hadd_ps(rveclo, rveclo);
     rveclo = _mm256_hadd_ps(rveclo, rveclo);
 
-    float reshi = rvechi[0] + rvechi[4];
-    float reslo = rveclo[0] + rveclo[4];
+    float reshi = _mm256_get_ps(rvechi, 0) + _mm256_get_ps(rvechi, 4);
+    float reslo = _mm256_get_ps(rveclo, 0) + _mm256_get_ps(rveclo, 4);
 
     desthi[i] = reshi;
     destlo[i] = reslo;
@@ -1781,8 +1781,8 @@ static void stationary_wavelet_apply24(WaveletType type, int level,
     veclo = _mm256_hadd_ps(veclo, veclo);
     veclo = _mm256_hadd_ps(veclo, veclo);
 
-    float reshi = vechi[0] + vechi[4];
-    float reslo = veclo[0] + veclo[4];
+    float reshi = _mm256_get_ps(vechi, 0) + _mm256_get_ps(vechi, 4);
+    float reslo = _mm256_get_ps(veclo, 0) + _mm256_get_ps(veclo, 4);
 
     desthi[i] = reshi;
     destlo[i] = reslo;

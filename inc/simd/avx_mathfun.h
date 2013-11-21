@@ -35,7 +35,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 
-#include <immintrin.h>
+#include <simd/instruction_set.h>
 
 /* yes I know, the top of this file is quite ugly */
 # define ALIGN32_BEG

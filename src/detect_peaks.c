@@ -14,11 +14,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
-#ifdef __AVX__
-#include <immintrin.h>
-#elif defined(__ARM_NEON__)
-#include <arm_neon.h>
-#endif
+#include <simd/instruction_set.h>
 
 INLINE void append_peak(int position, float value, int index,
                         ExtremumPoint **results, size_t *allocatedSize) {

@@ -17,6 +17,7 @@
 #include <stddef.h>
 #include <simd/common.h>
 #include <simd/attributes.h>
+#include <simd/instruction_set.h>
 
 SIMD_API_BEGIN
 

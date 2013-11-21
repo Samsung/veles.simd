@@ -13,17 +13,10 @@
 #ifndef INC_SIMD_ARITHMETIC_INL_H_
 #define INC_SIMD_ARITHMETIC_INL_H_
 
-#include <simd/attributes.h>
-
-#ifdef __cplusplus
-#define __STDC_LIMIT_MACROS
-#include <simd/avx_extra.h>
-#endif
-
-#ifdef __AVX__
 #include <assert.h>
-#endif
 #include <stdint.h>
+#include <simd/attributes.h>
+#include <simd/instruction_set.h>
 #include <simd/memory.h>
 
 #pragma GCC diagnostic push
@@ -130,8 +123,6 @@ INLINE NOTNULL(1,4) void add_to_all_na(float *input, size_t length,
 }
 
 #ifdef __AVX__
-
-#include <immintrin.h>  // NOLINT(build/include_order)
 
 #define SIMD
 #define FLOAT_STEP 8
@@ -646,11 +637,7 @@ INLINE NOTNULL(1) float sum_elements(const float *input, size_t length) {
   }
   accum = _mm256_hadd_ps(accum, accum);
   accum = _mm256_hadd_ps(accum, accum);
-#ifdef __cplusplus
-  float res = ElementAt(accum, 0) + ElementAt(accum, 4);
-#else
-  float res = accum[0] + accum[4];
-#endif
+  float res = _mm256_get_ps(accum, 0) + _mm256_get_ps(accum, 4);
   for (int j = (ilength & ~0xF); j < ilength; j++) {
     res += input[j];
   }
@@ -680,8 +667,6 @@ INLINE NOTNULL(1,4) void add_to_all(float *input, size_t length,
 }
 
 #elif defined(__ARM_NEON__)
-
-#include <arm_neon.h>  // NOLINT(build/include_order)
 
 #define SIMD
 #define FLOAT_STEP 4

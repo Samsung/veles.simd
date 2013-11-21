@@ -13,11 +13,7 @@
 #define LIBSIMD_IMPLEMENTATION
 #include "inc/simd/memory.h"
 #include <assert.h>
-#ifdef __AVX__
-#include <immintrin.h>
-#elif defined(__ARM_NEON__)
-#include <arm_neon.h>
-#endif
+#include <simd/instruction_set.h>
 #ifndef __USE_XOPEN2K
 #define __USE_XOPEN2K
 #endif

@@ -14,11 +14,7 @@
 #include "inc/simd/normalize.h"
 #include <assert.h>
 #include <float.h>
-#ifdef __SSE2__
-#include <immintrin.h>
-#elif defined(__ARM_NEON__)
-#include <arm_neon.h>
-#endif
+#include <simd/instruction_set.h>
 #include <simd/memory.h>
 
 #ifdef __ARM_NEON__

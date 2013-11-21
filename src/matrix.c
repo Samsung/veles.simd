@@ -14,11 +14,7 @@
 #include "inc/simd/matrix.h"
 #include <assert.h>
 #include "inc/simd/memory.h"
-#ifdef __AVX__
-#include <immintrin.h>
-#elif defined(__ARM_NEON__)
-#include <arm_neon.h>
-#endif
+#include <simd/instruction_set.h>
 
 static void matrix_add_novec(const float *m1, const float *m2,
                       size_t w, size_t h, float *res) {
@@ -202,7 +198,7 @@ static void matrix_multiply_avx(const float *m1, const float *m2,
       }
       sum = _mm256_hadd_ps(sum, sum);
       sum = _mm256_hadd_ps(sum, sum);
-      float rsum = sum[0] + sum[4];
+      float rsum = _mm256_get_ps(sum, 0) + _mm256_get_ps(sum, 4);
       for (int k = (w1 & ~0x7); k < (int)w1; k++) {
         rsum += m1[j * w1 + k] * col2[k];
       }
@@ -228,7 +224,7 @@ static void matrix_multiply_transposed_avx(const float *m1, const float *m2,
       }
       sum = _mm256_hadd_ps(sum, sum);
       sum = _mm256_hadd_ps(sum, sum);
-      float rsum = sum[0] + sum[4];
+      float rsum = _mm256_get_ps(sum, 0) + _mm256_get_ps(sum, 4);
       for (int k = (w1 & ~0x7); k < (int)w1; k++) {
         rsum += m1[j * w1 + k] * m2[i * w1 + k];
       }
