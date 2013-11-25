@@ -148,11 +148,10 @@ TEST(Wavelet, stationary_wavelet_apply_na) {
    }
 }
 
+typedef std::unique_ptr<float[], decltype(&std::free)> FloatPtr;
+
 class WaveletTest : public ::testing::TestWithParam<
     std::tuple<WaveletType, int, ExtensionType>> {
- public:
-  typedef std::unique_ptr<float, decltype(&std::free)> FloatPtr;
-
  protected:
   WaveletTest() : length_(512), array_(nullptr, std::free),
       prep_(nullptr, std::free), desthi_(nullptr, std::free),
@@ -182,8 +181,6 @@ class WaveletTest : public ::testing::TestWithParam<
 class StationaryWaveletTest : public ::testing::TestWithParam<
     std::tuple<WaveletType, int, int, ExtensionType>> {
 public:
- typedef std::unique_ptr<float, decltype(&std::free)> FloatPtr;
-
  protected:
   StationaryWaveletTest() : length_(512), array_(nullptr, std::free),
       prep_(nullptr, std::free), desthi_(nullptr, std::free),
