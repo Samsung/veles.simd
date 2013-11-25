@@ -71,6 +71,14 @@ INLINE NOTNULL(1, 2, 3) void real_multiply_na(
   *res = *a * *b;
 }
 
+INLINE NOTNULL(1, 2, 4) void real_multiply_array_na(
+    const float *a, const float *b, size_t length, float *res) {
+  int ilength = length;
+  for (int j = 0; j < ilength; j++) {
+    res[j] = a[j] * b[j];
+  }
+}
+
 INLINE NOTNULL(1, 2, 3) void complex_multiply_na(
     const float *a, const float *b, float *res) {
   float re1 = (a)[0];
@@ -477,7 +485,7 @@ INLINE NOTNULL(1, 3) void int32_to_int16(const int32_t *data,
 /// @details res[i] = a[i] * b[i], i = 0..7.
 /// @param a First vector.
 /// @param b Second vector.
-/// @param res Result vector.
+/// @param res Resulting vector.
 /// @pre a, b and res must be aligned to 32 bytes.
 INLINE NOTNULL(1, 2, 3) void real_multiply(
     const float *a, const float *b, float *res) {
@@ -485,6 +493,27 @@ INLINE NOTNULL(1, 2, 3) void real_multiply(
   __m256 bVec = _mm256_load_ps(b);
   __m256 resVec = _mm256_mul_ps(aVec, bVec);
   _mm256_store_ps(res, resVec);
+}
+
+/// @brief Multiplies the contents of two vectors, saving the result to the
+/// third vector, using AVX SIMD (float array version).
+/// @details res[i] = a[i] * b[i], i = 0..7.
+/// @param a First vector.
+/// @param b Second vector.
+/// @param length The size of the vectors (in float-s, not in bytes).
+/// @param res Resulting array.
+INLINE NOTNULL(1, 2, 4) void real_multiply_array(
+    const float *a, const float *b, size_t length, float *res) {
+  int j, ilength = length;
+  for (j = 0; j < ilength - FLOAT_STEP + 1; j += FLOAT_STEP) {
+    __m256 aVec = _mm256_loadu_ps(a + j);
+    __m256 bVec = _mm256_loadu_ps(b + j);
+    __m256 resVec = _mm256_mul_ps(aVec, bVec);
+    _mm256_storeu_ps(res + j, resVec);
+  }
+  for (; j < ilength; j++) {
+    res[j] = a[j] * b[j];
+  }
 }
 
 /// @brief Performs complex multiplication of the contents of two complex
@@ -782,6 +811,24 @@ INLINE NOTNULL(1, 2, 3) void real_multiply(
   vst1q_f32(res, resVec);
 }
 
+/// @brief Multiplies the contents of two vectors, saving the result to the
+/// third vector, using NEON SIMD (float array version).
+/// @details res[i] = a[i] * b[i], i = 0..3.
+/// @param a First vector.
+/// @param b Second vector.
+/// @param length The size of the vectors (in float-s, not in bytes).
+/// @param res Resulting array.
+INLINE NOTNULL(1, 2, 4) void real_multiply_array(
+    const float *a, const float *b, size_t length, float *res) {
+  int j, ilength = length;
+  for (j = 0; j < ilength - FLOAT_STEP + 1; j += FLOAT_STEP) {
+    real_multiply(a + j, b + j, res + j);
+  }
+  for (; j < ilength; j++) {
+    res[j] = a[j] * b[j];
+  }
+}
+
 /// @brief Performs complex multiplication of the contents of two complex
 /// vectors, saving the result to the third vector, using NEON SIMD.
 /// @details res[i] = a[i] * b[i] - a[i + 1] * b[i + 1], i = 0, 2;
@@ -922,6 +969,7 @@ INLINE NOTNULL(1,4) void add_to_all(float *input, size_t length,
 #define int32_to_int16 int32_to_int16_na
 #define int16_to_int32 int16_to_int32_na
 #define real_multiply real_multiply_na
+#define real_multiply_array real_multiply_array_na
 #define complex_multiply complex_multiply_na
 #define complex_multiply_conjugate complex_multiply_conjugate_na
 #define complex_conjugate complex_conjugate_na
