@@ -44,7 +44,8 @@ static __attribute__((always_inline)) inline unsigned long long __xgetbv() {
 }
 #endif  // __xgetbv
 
-#if defined(__cplusplus) && __GNUC__ == 4 && __GNUC_MINOR__ < 8
+#if defined(__cplusplus) && \
+  __GNUC__ == 4 && __GNUC_MINOR__ < 8 && !defined(__clang__)
 
 __attribute__((optimize(2), always_inline)) inline float
 _mm256_get_ps(__m256 vector, int index) {
