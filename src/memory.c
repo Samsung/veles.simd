@@ -62,8 +62,7 @@ float *mallocf(size_t length) {
 
 void memsetf(float *ptr, float value, size_t length) {
 #ifdef __AVX__
-
-  __m256 fillvec = _mm256_set1_ps(value);
+  const __m256 fillvec = _mm256_set1_ps(value);
   size_t startIndex = align_complement_f32(ptr);
 
   for (size_t i = 0; i < startIndex; i++) {
