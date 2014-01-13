@@ -31,11 +31,11 @@ AC_ARG_ENABLE([android],
     AS_HELP_STRING([--enable-android], [generate Android.mk and Application.mk in \"android\" subdirectory])
 )
 
-AC_ARG_WITH([android-project],
-    AS_HELP_STRING([--with-android-project], [sets APP_PROJECT_PATH in Application.mk])
-)
-ANDROID_PROJECT=$with_android_project
-AC_SUBST([ANDROID_PROJECT])
+ANDROID_CFLAGS=
+ANDROID_CPPFLAGS=
+m4_include([android.ac])
+AC_SUBST([ANDROID_CFLAGS])
+AC_SUBST([ANDROID_CPPFLAGS])
 
 # Check for debug configuration
 AC_ARG_ENABLE([debug], AS_HELP_STRING([--enable-debug], [use debug configuration]),
@@ -44,8 +44,9 @@ AC_ARG_ENABLE([debug], AS_HELP_STRING([--enable-debug], [use debug configuration
 AC_SUBST([ANDROID_OPTIM])
 
 AS_IF([test "x$enable_android" == "xyes"], [
-	AC_CONFIG_FILES(android/Android.mk android/Application.mk)
+	AC_CONFIG_FILES(android/Android.mk android/Application.mk)	
 	AC_OUTPUT
+	ln -s . android/jni
 	exit
 ])
 

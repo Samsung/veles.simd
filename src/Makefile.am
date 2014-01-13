@@ -24,6 +24,7 @@
 ##  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 include $(top_srcdir)/Makefile.common
+include Sources.make
 
 lib_LTLIBRARIES = libSimd.la
 
@@ -31,9 +32,7 @@ lib_LTLIBRARIES = libSimd.la
 # Build information for libSimd.la
 
 # Source files
-libSimd_la_SOURCES = memory.c convolve.c correlate.c \
-daubechies.c wavelet.c coiflets.c symlets.c matrix.c normalize.c \
-detect_peaks.c
+libSimd_la_SOURCES = $(SOURCES)
 
 # Used libraries
 libSimd_la_CFLAGS = $(AM_CFLAGS) @FFTF_CFLAGS@

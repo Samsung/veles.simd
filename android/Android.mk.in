@@ -1,15 +1,27 @@
-LOCAL_PATH := $(call my-dir)
+LOCAL_PATH := @abs_top_srcdir@/src
 
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := @PACKAGE_NAME@
 
-LOCAL_SRC_FILES := 
+include @abs_top_srcdir@/src/Sources.make
 
-LOCAL_CFLAGS := -std=c99 -fopenmp -Wall -Wextra -Wno-comment -Wformat-security -I@abs_top_srcdir@ -I@abs_top_srcdir@/inc -I@abs_top_builddir@
+LOCAL_SRC_FILES := $(SOURCES)
 
-LOCAL_CPPFLAGS := -std=c++0x -fno-deduce-init-list -Winvalid-pch -Wold-style-cast -Wnon-virtual-dtor -frtti -fexceptions
+LOCAL_CPP_EXTENSION := .cc
 
-LOCAL_LDLIBS := -fopenmp
+LOCAL_C_INCLUDES := @abs_top_srcdir@ @abs_top_srcdir@/inc @abs_top_builddir@
+
+LOCAL_CFLAGS := -std=c99 -fopenmp -Wall -Wextra -Wno-comment -Wformat-security \
+	@ANDROID_CFLAGS@
+
+LOCAL_CPPFLAGS := -std=c++0x -fno-deduce-init-list -Winvalid-pch \
+	-Wold-style-cast -Wnon-virtual-dtor @ANDROID_CPPFLAGS@
+
+LOCAL_LDFLAGS := -fopenmp
+
+LOCAL_CPP_FEATURES := rtti exceptions
+
+LOCAL_ARM_NEON := true
 
 include $(BUILD_SHARED_LIBRARY)
