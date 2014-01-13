@@ -458,7 +458,8 @@ static void wavelet_apply2(WaveletType type, ExtensionType ext,
     float reshi = 0.f, reslo = 0.f;
     for (int j = 0; j < 2; j++) {
       int index = i + j;
-      float srcval = index < ilength? src[index] : src_ext[index - ilength];
+      int delta = index - ilength;
+      float srcval = delta < 0? src[index] : src_ext[delta];
       reshi += highpassC[j] * srcval;
       reslo += lowpassC[j] * srcval;
     }

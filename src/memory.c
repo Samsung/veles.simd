@@ -50,9 +50,13 @@ void *malloc_aligned_offset(size_t size, int offset) {
 
 void *malloc_aligned(size_t size) {
   void *ptr;
+#ifndef __ANDROID__
   if (posix_memalign(&ptr, 64, size) != 0) {
     return NULL;
   }
+#else
+  ptr = memalign(64, size);
+#endif
   return ptr;
 }
 
