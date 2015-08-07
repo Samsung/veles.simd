@@ -1,5 +1,5 @@
 /*! @file matrix.h
- *  @brief New file description.
+ *  @brief Matrix arithmetic.
  *  @author Markovtsev Vadim <v.markovtsev@samsung.com>
  *  @version 1.0
  *

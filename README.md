@@ -4,7 +4,7 @@ Various mathematical routines with SIMD acceleration (SSE/AVX/NEON) in the form 
 ### Implemented features
 
 *  Conversion between int16_t, int32_t and float
-*  Real and complex vector multiplication, addition
+*  Parts of BLAS levels 1, 2, 3 with a completely different API (e.g., matrices, vectors, scalars)
 *  1D convolution and correlation with best approach detection (naive, overlap-save, FFT)
 *  1D peak detection
 *  sin, cos, log, exp (delegated to [AVX mathfun](http://software-lisc.fbk.eu/avx_mathfun/) and [NEON mathfun](http://gruntthepeon.free.fr/ssemath/neon_mathfun.html))
@@ -17,7 +17,8 @@ Various mathematical routines with SIMD acceleration (SSE/AVX/NEON) in the form 
 mkdir build && cd build
 ../configure
 make -j$(getconf _NPROCESSORS_ONLN)
-make instal DESTDIR=...
+make test
+make install DESTDIR=...
 ```
 
 By default, this library makes use of [FFTF](https://github.com/Samsung/FFTF).

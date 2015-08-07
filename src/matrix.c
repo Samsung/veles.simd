@@ -1,5 +1,5 @@
 /*! @file matrix.c
- *  @brief New file description.
+ *  @brief Matrix arithmetic implementation.
  *  @author Markovtsev Vadim <v.markovtsev@samsung.com>
  *  @version 1.0
  *
