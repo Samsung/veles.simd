@@ -7,7 +7,7 @@
  *  This code partially conforms to <a href="http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml">Google C++ Style Guide</a>.
  *
  *  @section Copyright
- *  Copyright 2013 Samsung R&D Institute Russia
+ *  Copyright © 2013 Samsung R&D Institute Russia
  */
 
 #include "inc/simd/detect_peaks.h"
