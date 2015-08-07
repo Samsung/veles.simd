@@ -1,5 +1,6 @@
 # veles.simd
 Various mathematical routines with SIMD acceleration (SSE/AVX/NEON) in the form of a compact C library.
+Designed without any OS portability in mind, tested only on Linux. Can work on BSD/Darwin after some potentially minor adaptation. Supports Android build / bionic.
 
 ### Implemented features
 
