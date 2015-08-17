@@ -32,7 +32,7 @@
 #define LIBSIMD_IMPLEMENTATION
 #include "inc/simd/correlate.h"
 #include "inc/simd/convolve.h"
-#include "inc/simd/arithmetic-inl.h"
+#include "inc/simd/arithmetic.h"
 
 CrossCorrelationFFTHandle cross_correlate_fft_initialize(size_t xLength,
                                                          size_t hLength) {

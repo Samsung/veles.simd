@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fftf/api.h>
-#include "inc/simd/arithmetic-inl.h"
+#include "inc/simd/arithmetic.h"
 
 void convolve_simd(int simd,
                    const float *__restrict x, size_t xLength,

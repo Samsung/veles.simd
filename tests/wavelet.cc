@@ -30,7 +30,7 @@
 
 #include <gtest/gtest.h>
 #include <chrono>
-#include <simd/arithmetic-inl.h>
+#include <simd/arithmetic.h>
 #include <simd/memory.h>
 #include <simd/wavelet.h>
 #define WAVELET_INTERNAL_USE

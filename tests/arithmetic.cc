@@ -1,5 +1,5 @@
 /*! @file arithmetic.cc
- *  @brief Tests for src/primitives/arithmetic-inl.h.
+ *  @brief Tests for src/primitives/arithmetic.h.
  *  @author Markovtsev Vadim <v.markovtsev@samsung.com>
  *  @version 1.0
  *
@@ -28,8 +28,9 @@
  *  under the License.
  */
 
+#include <cmath>
 #include <gtest/gtest.h>
-#include <simd/arithmetic-inl.h>
+#include <simd/arithmetic.h>
 
 #ifdef SIMD
 TEST(Arithmetic, int16_multiply) {
@@ -329,6 +330,88 @@ TEST(Arithmetic, float_to_int16) {
       float_to_int16(&ar[1], 29, res);
     }, ".*Assertion.*");
 #endif
+}
+
+TEST(Arithmetic, float16_to_float_na) {
+  uint16_t data[] = { 12288, 16777, 18103, 49820, 17421, 18573, 18420, 49771,
+                      24528, 2, 32785, 168 };
+  float reference[] = { 0.125, 2.76757812, 6.71484375, -3.3046875, 4.05078125,
+                        9.1015625, 7.953125, -3.20898438, 500.066406,
+                        0.0000001, -0.000001, 0.00001 };
+  int size = sizeof(data) / sizeof(data[0]);
+  float peak[size];
+  float16_to_float_na(data, size, peak);
+  for (int i = 0; i < size - 3; i++) {
+    float ref = reference[i];
+    ASSERT_NEAR(ref, peak[i], fabs(ref / 1000)) << "i = " << i;
+  }
+  for (int i = size - 3; i < size; i++) {
+    ASSERT_NEAR(reference[i], peak[i], 0.2e-7) << "i = " << i;
+  }
+  uint16_t special[] = { 32768, 0, 64512, 31744, 32256 };
+  float reference_special[] = { -0., 0.,
+      -std::numeric_limits<float>::infinity(),
+      std::numeric_limits<float>::infinity(), NAN };
+  float16_to_float_na(special, 5, peak);
+  for (int i = 0; i < 4; i++) {
+    ASSERT_EQ(reference_special[i], peak[i]) << "i = " << i;
+  }
+  ASSERT_NE(peak[4], peak[4]);
+}
+
+TEST(Arithmetic, float16_to_float) {
+  uint16_t data[]
+#ifndef __arm__
+  __attribute__ ((aligned (32)))
+#endif
+  = { 12288, 16777, 18103, 49820, 17421, 18573, 18420, 49771, 24528,
+      12288, 12288, 12288, 12288, 64512, 31744, 32256, 2, 32785, 168,
+      32768, 0, 0, 0, 0, 0, 0, 32768, 0, 0, 0, 0, 0, 0, 12288 };
+  float reference[]
+#ifndef __arm__
+  __attribute__ ((aligned (32)))
+#endif
+  = { 0.125, 2.76757812, 6.71484375, -3.3046875, 4.05078125, 9.1015625,
+      7.953125, -3.20898438, 500.066406, 0.125, 0.125, 0.125, 0.125,
+      -std::numeric_limits<float>::infinity(),
+      std::numeric_limits<float>::infinity(), NAN, 0.0000001, -0.000001,
+      0.00001, -0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0.125 };
+  int size = 16, N = sizeof(data) / sizeof(data[0]);
+  float peak[N]
+#ifndef __arm__
+  __attribute__ ((aligned (32)))
+#endif
+  ;
+  float16_to_float(data, N, peak);
+  for (int i = 0; i < size - 3; i++) {
+    float ref = reference[i];
+    ASSERT_NEAR(ref, peak[i], fabs(ref / 1000)) << "i = " << i;
+  }
+  for (int i = size - 3; i < size - 1; i++) {
+    ASSERT_EQ(reference[i], peak[i]) << "i = " << i;
+  }
+  ASSERT_NE(peak[size - 1], peak[size - 1]);
+  for (int i = size; i < size + 3; i++) {
+    ASSERT_NEAR(reference[i], peak[i], 0.2e-7) << "i = " << i;
+  }
+  for (int i = size + 3; i < N; i++) {
+    ASSERT_EQ(reference[i], peak[i]) << "i = " << i;
+  }
+  uint16_t subnormals[]
+#ifndef __arm__
+  __attribute__ ((aligned (32)))
+#endif
+  = { 2, 32785, 168, 2, 2, 32785, 168, 2 };
+  float reference_subnormals[]
+#ifndef __arm__
+  __attribute__ ((aligned (32)))
+#endif
+  = { 0.0000001, -0.000001, 0.00001, 0.0000001, 0.0000001, -0.000001, 0.00001,
+      0.0000001 };
+  float16_to_float(subnormals, 8, peak);
+  for (int i = 0; i < 8; i++) {
+    ASSERT_NEAR(reference_subnormals[i], peak[i], 0.2e-7) << "i = " << i;
+  }
 }
 
 #include "tests/google/src/gtest_main.cc"

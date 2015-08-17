@@ -55,8 +55,16 @@ int align_complement_i16(const int16_t *ptr) {
   return align_offset_internal(ptr) / 2;
 }
 
+int align_complement_u16(const uint16_t *ptr) {
+  return align_offset_internal(ptr) / 2;
+}
+
 int align_complement_i32(const int32_t *ptr) {
-  return align_offset_internal(ptr) /4;
+  return align_offset_internal(ptr) / 4;
+}
+
+int align_complement_u32(const uint32_t *ptr) {
+  return align_offset_internal(ptr) / 4;
 }
 #endif
 

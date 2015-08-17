@@ -58,6 +58,15 @@ int align_complement_f32(const float *ptr) NOTNULL(1);
 /// @endcode
 /// else 0.
 int align_complement_i16(const int16_t *ptr) NOTNULL(1);
+/// @brief Returns the alignment complement of a pointer to a short unsigned
+/// integer array.
+/// @param ptr The pointer to a short unsigned integer array.
+/// @return If ptr is not aligned,
+/// @code
+/// (32 - (ptr % 32)) / sizeof(uint16_t),
+/// @endcode
+/// else 0.
+int align_complement_u16(const uint16_t *ptr) NOTNULL(1);
 /// @brief Returns the alignment complement of a pointer to an integer array.
 /// @param ptr The pointer to an integer array.
 /// @return If ptr is not aligned,
@@ -66,6 +75,15 @@ int align_complement_i16(const int16_t *ptr) NOTNULL(1);
 /// @endcode
 /// else 0.
 int align_complement_i32(const int32_t *ptr) NOTNULL(1);
+/// @brief Returns the alignment complement of a pointer to an unsigned integer
+/// array.
+/// @param ptr The pointer to an unsigned integer array.
+/// @return If ptr is not aligned,
+/// @code
+/// (32 - (ptr % 32)) / sizeof(uint32_t),
+/// @endcode
+/// else 0.
+int align_complement_u32(const uint32_t *ptr) NOTNULL(1);
 #endif
 
 /// @brief Allocates an aligned block in the memory.

@@ -33,7 +33,7 @@
 #include <cmath>
 #include <simd/correlate.h>
 #include <simd/memory.h>
-#include <simd/arithmetic-inl.h>
+#include <simd/arithmetic.h>
 #include <fftf/api.h>
 
 void cross_correlate_reference(const float *__restrict x, size_t xLength,

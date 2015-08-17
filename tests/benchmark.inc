@@ -12,7 +12,7 @@
 
 #include <math.h>
 #include <chrono>
-#include <simd/arithmetic-inl.h>
+#include <simd/arithmetic.h>
 
 #ifdef BENCHMARK
 

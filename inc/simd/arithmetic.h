@@ -1,4 +1,4 @@
-/*! @file arithmetic-inl.h
+/*! @file arithmetic.h
  *  @brief Inline arithmetic functions with SIMD acceleration.
  *  @author Markovtsev Vadim <v.markovtsev@samsung.com>
  *  @version 1.0
@@ -28,8 +28,8 @@
  *  under the License.
  */
 
-#ifndef INC_SIMD_ARITHMETIC_INL_H_
-#define INC_SIMD_ARITHMETIC_INL_H_
+#ifndef INC_SIMD_ARITHMETIC_H_
+#define INC_SIMD_ARITHMETIC_H_
 
 #include <assert.h>
 #include <stdint.h>
@@ -40,8 +40,8 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 
-INLINE NOTNULL(1, 3) void int16_to_float_na(const int16_t *data,
-                                            size_t length, float *res) {
+INLINE NOTNULL(1, 3) void int16_to_float_na(
+    const int16_t *data, size_t length, float *__restrict res) {
   for (size_t i = 0; i < length; i++) {
     res[i] = (float)data[i];
   }
@@ -70,17 +70,59 @@ INLINE NOTNULL(1, 3) void float_to_int32_na(const float *data,
   }
 }
 
-INLINE NOTNULL(1, 3) void int32_to_int16_na(const int32_t *data,
-                                            size_t length, int16_t *res) {
+INLINE NOTNULL(1, 3) void int32_to_int16_na(
+    const int32_t *data, size_t length, int16_t *__restrict res) {
   for (size_t i = 0; i < length; i++) {
     res[i] = (int16_t)data[i];
   }
 }
 
-INLINE NOTNULL(1, 3) void int16_to_int32_na(const int16_t *data,
-                                            size_t length, int32_t *res) {
+INLINE NOTNULL(1, 3) void int16_to_int32_na(
+    const int16_t *data, size_t length, int32_t *__restrict res) {
   for (size_t i = 0; i < length; i++) {
     res[i] = (int32_t)data[i];
+  }
+}
+
+typedef union {
+  uint32_t i;
+  float f;
+} FloatUint32;
+
+INLINE NOTNULL(1, 3) void float16_to_float_na(
+    const uint16_t *data, size_t length, float *__restrict res) {
+  for (size_t i = 0; i < length; i++) {
+    uint16_t in = data[i];
+    FloatUint32 bp;
+    uint32_t exp = in & 0x7c00;    // Exponent
+    switch (exp) {
+      case 0: { // 0 or subnormal
+        bp.i = in & 0x03ff;
+        if (bp.i == 0) {  // Signed zero
+            break;
+        }
+        // Subnormal
+        int lz = __builtin_clz(bp.i) - 16 - 6;
+        exp = (127u - 15u - lz) << 23;
+        bp.i <<= lz + 1;
+        bp.i = exp | ((bp.i & 0x03ff) << 13);
+        break;
+      }
+      case 0x7c00:  // inf, nan
+        bp.i = in & 0x03ff;
+        bp.i <<= 13;
+        bp.i |= 0x7f800000;
+        break;
+      default:
+        bp.i = in & 0x7fff;  // Non-sign bits
+        bp.i <<= 13;         // Align mantissa on MSB
+        bp.i += 0x38000000;  // Adjust bias
+        break;
+    }
+    uint32_t sign = in & 0x8000;   // Sign bit
+    sign <<= 16;                   // Shift sign bit into position
+    bp.i |= sign;                  // Re-insert sign bit
+    res[i] = bp.f;
   }
 }
 
@@ -496,6 +538,80 @@ INLINE NOTNULL(1, 3) void int32_to_int16(const int32_t *data,
   }
 }
 
+/// @brief Converts an array of 16-bit floats to 32-bit floating point numbers,
+/// using SSE2 SIMD.
+/// @param data The array of float16 (unit16_t).
+/// @param length The length of the array (in uint16_t-s, not in bytes).
+/// @param res The floating point number array to write the results to.
+/// @note align_complement_i16(data) % 4 must be equal to
+/// align_complement_f32(res) % 4.
+/// @note res must have at least the same length as data.
+INLINE NOTNULL(1, 3) void float16_to_float(
+    const uint16_t *data, size_t length, float *__restrict res) {
+  int ilength = (int)length;
+  int startIndex = align_complement_u16(data);
+  assert(startIndex % 4 == align_complement_f32(res) % 4);
+  float16_to_float_na(data, startIndex, res);
+  int offset = startIndex + ((ilength - startIndex) & ~0x7);
+  float16_to_float_na(data + offset, ilength - offset, res + offset);
+
+  const __m128i expMask = _mm_set1_epi16(0x7c00);
+  const __m128i zerosVec = _mm_set1_epi16(0);
+  const __m128i addVecDef = _mm_set1_epi32(0x38000000);
+  const __m128i addVecInfNan = _mm_set1_epi32(0x7f800000);
+  for (int i = startIndex; i < ilength - 7; i += 8) {
+    __m128i intVec = _mm_load_si128((const __m128i*)(data + i));
+    __m128i expVec = _mm_and_si128(intVec, expMask);
+    __m128i cmpVec = _mm_cmpeq_epi16(expVec, zerosVec);
+    int zero_check = _mm_movemask_epi8(cmpVec);
+    if (zero_check != 0) {
+      // There are zeros or subnormals
+      if (zero_check == 0xffff) {
+        // there are only zeros or subnormals
+        expVec = _mm_and_si128(intVec, _mm_set1_epi16(0x03ff));
+        cmpVec = _mm_cmpeq_epi16(expVec, zerosVec);
+        zero_check = _mm_movemask_epi8(cmpVec);
+        if (zero_check == 0xffff) {
+          // only zeros
+          __m128i signVec = _mm_and_si128(intVec, _mm_set1_epi16(0x8000));
+          __m128i signlo = _mm_unpacklo_epi16(zerosVec, signVec);
+          __m128i signhi = _mm_unpackhi_epi16(zerosVec, signVec);
+          _mm_store_si128((__m128i*)(res + i), signlo);
+          _mm_store_si128((__m128i*)(res + i + 4), signhi);
+          continue;
+        } else {
+          float16_to_float_na(data + i, 8, res + i);
+          continue;
+        }
+      } else {
+        float16_to_float_na(data + i, 8, res + i);
+        continue;
+      }
+    }
+    cmpVec = _mm_cmpeq_epi16(expVec, expMask);
+    __m128i andVec = _mm_blendv_epi8(
+        _mm_set1_epi16(0x7fff), _mm_set1_epi16(0x03ff), cmpVec);
+    __m128i tmpVec = _mm_and_si128(intVec, andVec);
+    __m128i intlo = _mm_unpacklo_epi16(tmpVec, zerosVec);
+    __m128i inthi = _mm_unpackhi_epi16(tmpVec, zerosVec);
+    intlo = _mm_slli_epi32(intlo, 13);
+    inthi = _mm_slli_epi32(inthi, 13);
+    __m128i cmplo = _mm_unpacklo_epi16(zerosVec, cmpVec);
+    __m128i cmphi = _mm_unpackhi_epi16(zerosVec, cmpVec);
+    __m128i addlo = _mm_blendv_epi8(addVecDef, addVecInfNan, cmplo);
+    __m128i addhi = _mm_blendv_epi8(addVecDef, addVecInfNan, cmphi);
+    intlo = _mm_add_epi32(intlo, addlo);
+    inthi = _mm_add_epi32(inthi, addhi);
+    __m128i signVec = _mm_and_si128(intVec, _mm_set1_epi16(0x8000));
+    __m128i signlo = _mm_unpacklo_epi16(zerosVec, signVec);
+    __m128i signhi = _mm_unpackhi_epi16(zerosVec, signVec);
+    intlo = _mm_or_si128(intlo, signlo);
+    inthi = _mm_or_si128(inthi, signhi);
+    _mm_store_si128((__m128i*)(res + i), intlo);
+    _mm_store_si128((__m128i*)(res + i + 4), inthi);
+  }
+}
+
 #endif
 
 /// @brief Multiplies the contents of two vectors, saving the result to the
@@ -815,6 +931,112 @@ INLINE NOTNULL(1, 3) void int32_to_int16(const int32_t *data,
   }
 }
 
+/// @brief Converts an array of 16-bit floats to 32-bit floating point numbers,
+/// using ARM NEON SIMD.
+/// @param data The array of float16 (unit16_t).
+/// @param length The length of the array (in uint16_t-s, not in bytes).
+/// @param res The floating point number array to write the results to.
+/// @note align_complement_i16(data) % 4 must be equal to
+/// align_complement_f32(res) % 4.
+/// @note res must have at least the same length as data.
+INLINE NOTNULL(1, 3) void float16_to_float(
+    const uint16_t *data, size_t length, float *__restrict res) {
+  int ilength = (int)length;
+  const uint16x8_t expMask = vdupq_n_u16(0x7c00);
+  const uint16x8_t zerosVec = vdupq_n_u16(0);
+  for (int i = 0; i < ilength - 7; i += 8) {
+    uint16x8_t intVec = vld1q_u16(data + i);
+    uint16x8_t expVec = vandq_u16(intVec, expMask);
+    uint16x8_t cmpVec = vceqq_u16(expVec, zerosVec);
+    uint64x2_t zeroAdd = vpaddlq_u32(vpaddlq_u16(cmpVec));
+    uint64_t zero_check = vgetq_lane_u64(zeroAdd, 0) + vgetq_lane_u64(zeroAdd, 1);
+    if (zero_check != 0) {
+      // There are zeros or subnormals
+      if (zero_check == (0xffff << 3)) {
+        // there are only zeros or subnormals
+        uint16x8_t tmpVec = vandq_u16(intVec, vdupq_n_u16(0x03ff));
+        cmpVec = vceqq_u16(tmpVec, zerosVec);
+        zeroAdd = vpaddlq_u32(vpaddlq_u16(cmpVec));
+        zero_check = vgetq_lane_u64(zeroAdd, 0) + vgetq_lane_u64(zeroAdd, 1);
+        if (zero_check == (0xffff << 3)) {
+          // only zeros
+          uint16x8_t signVec = vandq_u16(intVec, vdupq_n_u16(0x8000));
+          uint32x4_t signlo = vmovl_u16(vget_low_u16(signVec));
+          uint32x4_t signhi = vmovl_u16(vget_high_u16(signVec));
+          signlo = vshlq_n_u32(signlo, 16);
+          signhi = vshlq_n_u32(signhi, 16);
+          vst1q_u32((uint32_t*)(res + i), signlo);
+          vst1q_u32((uint32_t*)(res + i + 4), signhi);
+          continue;
+        } else if (zero_check == 0) {
+          // only subnormals
+          uint16x8_t lz = vclzq_u16(tmpVec);
+          lz = vsubq_u16(lz, vdupq_n_u16(5));
+          expVec = vsubq_u16(vdupq_n_u16(127 - 15 + 1), lz);
+          tmpVec = vshlq_u16(tmpVec, vreinterpretq_s16_u16(lz));
+          tmpVec = vandq_u16(tmpVec, vdupq_n_u16(0x03ff));
+          uint32x4_t tmplo = vmovl_u16(vget_low_u16(tmpVec));
+          uint32x4_t tmphi = vmovl_u16(vget_high_u16(tmpVec));
+          tmplo = vshlq_n_u32(tmplo, 13);
+          tmphi = vshlq_n_u32(tmphi, 13);
+          uint32x4_t explo = vmovl_u16(vget_low_u16(expVec));
+          uint32x4_t exphi = vmovl_u16(vget_high_u16(expVec));
+          explo = vshlq_n_u32(explo, 23);
+          exphi = vshlq_n_u32(exphi, 23);
+          tmplo = vorrq_u32(tmplo, explo);
+          tmphi = vorrq_u32(tmphi, exphi);
+          uint16x8_t signVec = vandq_u16(intVec, vdupq_n_u16(0x8000));
+          uint32x4_t signlo = vmovl_u16(vget_low_u16(signVec));
+          uint32x4_t signhi = vmovl_u16(vget_high_u16(signVec));
+          signlo = vshlq_n_u32(signlo, 16);
+          signhi = vshlq_n_u32(signhi, 16);
+          tmplo = vorrq_u32(signlo, tmplo);
+          tmphi = vorrq_u32(signhi, tmplo);
+          vst1q_u32((uint32_t*)(res + i), tmplo);
+          vst1q_u32((uint32_t*)(res + i + 4), tmphi);
+          continue;
+        } else {
+          float16_to_float_na(data + i, 8, res + i);
+          continue;
+        }
+      } else {
+        float16_to_float_na(data + i, 8, res + i);
+        continue;
+      }
+    }
+    cmpVec = vceqq_u16(expVec, expMask);
+    uint16x8_t masked1 = vandq_u16(vdupq_n_u16(0x03ff), cmpVec);
+    uint16x8_t masked2 = vbicq_u16(vdupq_n_u16(0x7fff), cmpVec);
+    uint16x8_t andVec = vorrq_u16(masked1, masked2);
+    uint16x8_t tmpVec = vandq_u16(intVec, andVec);
+    uint32x4_t intlo = vmovl_u16(vget_low_u16(tmpVec));
+    uint32x4_t inthi = vmovl_u16(vget_high_u16(tmpVec));
+    intlo = vshlq_n_u32(intlo, 13);
+    inthi = vshlq_n_u32(inthi, 13);
+    masked1 = vandq_u16(vdupq_n_u16(0x7f80), cmpVec);
+    masked2 = vbicq_u16(vdupq_n_u16(0x3800), cmpVec);
+    uint16x8_t addVec = vorrq_u16(masked1, masked2);
+    uint32x4_t addlo = vmovl_u16(vget_low_u16(addVec));
+    uint32x4_t addhi = vmovl_u16(vget_high_u16(addVec));
+    addlo = vshlq_n_u32(addlo, 16);
+    addhi = vshlq_n_u32(addhi, 16);
+    intlo = vaddq_u32(intlo, addlo);
+    inthi = vaddq_u32(inthi, addhi);
+    uint16x8_t signVec = vandq_u16(intVec, vdupq_n_u16(0x8000));
+    uint32x4_t signlo = vmovl_u16(vget_low_u16(signVec));
+    uint32x4_t signhi = vmovl_u16(vget_high_u16(signVec));
+    signlo = vshlq_n_u32(signlo, 16);
+    signhi = vshlq_n_u32(signhi, 16);
+    intlo = vorrq_u32(intlo, signlo);
+    inthi = vorrq_u32(inthi, signhi);
+    vst1q_u32((uint32_t*)(res + i), intlo);
+    vst1q_u32((uint32_t*)(res + i + 4), inthi);
+  }
+
+  int offset = ilength & ~0x7;
+  float16_to_float_na(data + offset, ilength - offset, res + offset);
+}
+
 /// @brief Multiplies the contents of two vectors, saving the result to the
 /// third vector, using NEON SIMD (float version).
 /// @details res[i] = a[i] * b[i], i = 0..3.
@@ -986,6 +1208,7 @@ INLINE NOTNULL(1,4) void add_to_all(float *input, size_t length,
 #define float_to_int32 float_to_int32_na
 #define int32_to_int16 int32_to_int16_na
 #define int16_to_int32 int16_to_int32_na
+#define float16_to_float float16_to_float_na
 #define real_multiply real_multiply_na
 #define real_multiply_array real_multiply_array_na
 #define complex_multiply complex_multiply_na
@@ -1013,4 +1236,4 @@ INLINE int next_highest_power_of_2(int value) {
 
 #pragma GCC diagnostic pop
 
-#endif  // INC_SIMD_ARITHMETIC_INL_H_
+#endif  // INC_SIMD_ARITHMETIC_H_

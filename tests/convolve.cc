@@ -33,7 +33,7 @@
 #include <cmath>
 #include <simd/convolve.h>
 #include <simd/memory.h>
-#include <simd/arithmetic-inl.h>
+#include <simd/arithmetic.h>
 #include <fftf/api.h>
 
 void convolve_reference(const float *__restrict x, size_t xLength,

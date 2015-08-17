@@ -24,7 +24,7 @@
 ##  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Append header file names which you want to ship here
-pkginclude_HEADERS = simd/arithmetic-inl.h simd/attributes.h simd/avx_mathfun.h \
+pkginclude_HEADERS = simd/arithmetic.h simd/attributes.h simd/avx_mathfun.h \
 simd/avxintrin-emu.h  simd/common.h simd/convolve_structs.h simd/convolve.h \
 simd/correlate.h simd/detect_peaks.h simd/instruction_set.h simd/mathfun.h \
 simd/matrix.h simd/memory.h  simd/neon_mathfun.h simd/normalize.h \

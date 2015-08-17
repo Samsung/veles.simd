@@ -32,7 +32,7 @@
 #include "inc/simd/wavelet.h"
 #include <assert.h>
 #include <string.h>
-#include "inc/simd/arithmetic-inl.h"
+#include "inc/simd/arithmetic.h"
 #define WAVELET_INTERNAL_USE
 #include "src/coiflets.h"
 #include "src/daubechies.h"
