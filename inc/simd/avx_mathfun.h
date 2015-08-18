@@ -245,7 +245,7 @@ _PS256_CONST(cephes_exp_p4, 1.6666665459E-1);
 _PS256_CONST(cephes_exp_p5, 5.0000001201E-1);
 
 static inline v8sf exp256_ps(v8sf x) {
-  v8sf tmp = _mm256_setzero_ps(), fx;
+  v8sf tmp, fx;
   v8si imm0;
   v8sf one = *(v8sf*)_ps256_1;
 
@@ -325,7 +325,7 @@ _PS256_CONST(cephes_FOPI, 1.27323954473516); // 4 / M_PI
 
 */
 static inline v8sf sin256_ps(v8sf x) { // any x
-  v8sf xmm1, xmm2 = _mm256_setzero_ps(), xmm3, sign_bit, y;
+  v8sf xmm1, xmm2, xmm3, sign_bit, y;
   v8si imm0, imm2;
 
 #ifndef __AVX2__
@@ -452,7 +452,7 @@ static inline v8sf sin256_ps(v8sf x) { // any x
 
 /* almost the same as sin_ps */
 static inline v8sf cos256_ps(v8sf x) { // any x
-  v8sf xmm1, xmm2 = _mm256_setzero_ps(), xmm3, y;
+  v8sf xmm1, xmm2, xmm3, y;
   v8si imm0, imm2;
 
 #ifndef __AVX2__
@@ -570,7 +570,7 @@ static inline v8sf cos256_ps(v8sf x) { // any x
    it is almost as fast, and gives you a free cosine with your sine */
 static inline void sincos256_ps(v8sf x, v8sf *s, v8sf *c) {
 
-  v8sf xmm1, xmm2, xmm3 = _mm256_setzero_ps(), sign_bit_sin, y;
+  v8sf xmm1, xmm2, xmm3, sign_bit_sin, y;
   v8si imm0, imm2, imm4;
 
 #ifndef __AVX2__
