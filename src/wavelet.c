@@ -216,6 +216,7 @@ INLINE NOTNULL(4, 5) void stationary_initialize_highpass_lowpass(
     initialize_highpass_lowpass(type, size, highpass, lowpass);
     return;
   }
+  assert(size % 2 == 0);  // calms down clang static analyzer
   assert(size % stride == 0);
   int order = size / stride;
   assert(order >= 2);

@@ -264,6 +264,7 @@ static void normalize2D_minmax_sse(uint8_t min, uint8_t max,
 static void minmax2D_sse(const uint8_t* src, int src_stride,
                          int width, int height,
                          uint8_t* min_ptr, uint8_t* max_ptr) {
+  assert(width > 0 && height > 0);
   uint8_t min = src[0], max = src[0];
   __m128i min_vec = _mm_set1_epi8(min), max_vec = _mm_set1_epi8(max);
   for (int y = 0; y < height; y++) {
@@ -296,13 +297,17 @@ static void minmax2D_sse(const uint8_t* src, int src_stride,
     _mm_store_si128((__m128i*)max_arr, max_vec);
   }
   for (int i = 0; i < 16; i++) {
-    float val = min_arr[i];
-    if (min_ptr && val < min) {
-      min = val;
+    if (min_ptr) {
+      float val = min_arr[i];
+      if (val < min) {
+        min = val;
+      }
     }
-    val = max_arr[i];
-    if (max_ptr && val > max) {
-      max = val;
+    if (max_ptr) {
+      float val = max_arr[i];
+      if (val > max) {
+        max = val;
+      }
     }
   }
 
@@ -317,6 +322,7 @@ static void minmax2D_sse(const uint8_t* src, int src_stride,
 #ifdef __AVX__
 static void minmax1D_avx(const float* src, int length,
                          float* min_ptr, float* max_ptr) {
+  assert(length > 0);
   float min = src[0], max = src[0];
   __m256 min_vec = _mm256_set1_ps(min), max_vec = _mm256_set1_ps(max);
   for (int i = 0; i < length - 7; i += 8) {
@@ -348,13 +354,17 @@ static void minmax1D_avx(const float* src, int length,
     _mm256_store_ps(max_arr, max_vec);
   }
   for (int i = 0; i < 8; i++) {
-    float val = min_arr[i];
-    if (min_ptr && val < min) {
-      min = val;
+    if (min_ptr) {
+      float val = min_arr[i];
+      if (val < min) {
+        min = val;
+      }
     }
-    val = max_arr[i];
-    if (max_ptr && val > max) {
-      max = val;
+    if (max_ptr) {
+      float val = max_arr[i];
+      if (val > max) {
+        max = val;
+      }
     }
   }
 

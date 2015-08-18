@@ -32,8 +32,16 @@
 #define INC_SIMD_INSTRUCTION_SET_H_
 
 #ifdef __SSE3__
+#include <mmintrin.h>
+#include <xmmintrin.h>
+#include <emmintrin.h>
+#include <pmmintrin.h>
+#include <tmmintrin.h>
+#include <smmintrin.h>
+#include <wmmintrin.h>
 #ifdef __AVX__
-#include <immintrin.h>
+#define _IMMINTRIN_H_INCLUDED
+#include <avxintrin.h>
 #define __m256_get_ps(vec, index) vec[index]
 #else
 #include <simd/avxintrin-emu.h>
