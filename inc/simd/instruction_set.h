@@ -40,6 +40,7 @@
 #include <smmintrin.h>
 #include <wmmintrin.h>
 #ifdef __AVX__
+#define __IMMINTRIN_H
 #define _IMMINTRIN_H_INCLUDED
 #include <avxintrin.h>
 #define __m256_get_ps(vec, index) vec[index]
