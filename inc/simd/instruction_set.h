@@ -31,7 +31,14 @@
 #ifndef INC_SIMD_INSTRUCTION_SET_H_
 #define INC_SIMD_INSTRUCTION_SET_H_
 
-#ifdef __SSE3__
+#if defined (__SSE4_2__) || defined (__SSE4_1__)
+#if !defined(_IMMINTRIN_H_INCLUDED) && !defined(__IMMINTRIN_H)
+#define _IMMINTRIN_H_INCLUDED
+#define __IMMINTRIN_H
+#else
+#define SIMD_IMMINTRIN_INCLUDED
+#endif
+#ifndef SIMD_IMMINTRIN_INCLUDED
 #include <mmintrin.h>
 #include <xmmintrin.h>
 #include <emmintrin.h>
@@ -39,11 +46,17 @@
 #include <tmmintrin.h>
 #include <smmintrin.h>
 #include <wmmintrin.h>
+#endif
 #ifdef __AVX__
-#define __IMMINTRIN_H
-#define _IMMINTRIN_H_INCLUDED
+#ifndef SIMD_IMMINTRIN_INCLUDED
 #include <avxintrin.h>
+#endif
 #define __m256_get_ps(vec, index) vec[index]
+#ifdef __AVX2__
+#ifndef SIMD_IMMINTRIN_INCLUDED
+#include <avx2intrin.h>
+#endif
+#endif
 #else
 #include <simd/avxintrin-emu.h>
 #define __AVX__
